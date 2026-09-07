@@ -21,6 +21,9 @@ export const actualizarCompra = (id: string, v: { kg_real: number | string; prec
 /** Cambia la fecha de un lote recibido; la base rearma el código (fn_editar_lote, 07_correcciones.sql). */
 export const editarLote = (id: string, v: { fecha: string; observaciones?: string | null }) =>
   supabase.rpc('fn_editar_lote', { p_lote_id: id, p_fecha: v.fecha, p_observaciones: v.observaciones?.trim() || null }).then((r) => ok<Lote>(r))
+/** Quita una sola jaba (fn_quitar_jaba). Devuelve true si era la última y el lote se borró. */
+export const quitarJaba = (detalleId: string, motivo?: string | null) =>
+  supabase.rpc('fn_quitar_jaba', { p_detalle_id: detalleId, p_motivo: motivo?.trim() || null }).then((r) => ok<boolean>(r))
 /** Deshace una recepción equivocada: borra jabas y lote (fn_anular_lote). Falla si el lote ya se procesó. */
 export const anularLote = (id: string, motivo?: string | null) =>
   supabase.rpc('fn_anular_lote', { p_lote_id: id, p_motivo: motivo?.trim() || null }).then(ok)

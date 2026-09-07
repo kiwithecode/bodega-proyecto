@@ -6,6 +6,9 @@
 --        El código se rearma con fn_codigo_lote (misma regla que al recibir), así que
 --        131AR040526 pasa a ser 131AR030526. La recepción hereda la fecha si todas
 --        sus jabas son de ese lote.
+--  fn_quitar_jaba(jaba, motivo)                quita UNA fila de recepcion_detalle (p. ej. el mismo producto
+--        digitado dos veces). El trigger recalcula kg y costo del lote; si era la última jaba y nada
+--        salió del lote, el lote se borra también. Devuelve true si el lote se borró.
 --  fn_anular_lote(lote, motivo)                deshace una recepción equivocada.
 --        Borra las jabas (recepcion_detalle → queda en auditoría como "borró"), la
 --        recepción si quedó vacía, y el lote. Se borra en vez de marcar 'anulado'
@@ -110,4 +113,47 @@ begin
         null, null);
 end $$;
 
-grant execute on function fn_editar_lote(uuid, date, text), fn_anular_lote(uuid, text) to authenticated;
+create or replace function fn_quitar_jaba(p_detalle_id uuid, p_motivo text default null)
+returns boolean language plpgsql as $$
+declare
+    v_det       recepcion_detalle%rowtype;
+    v_lote      lotes%rowtype;
+    v_consumido numeric;
+    v_restantes int;
+    v_borrado   boolean := false;
+begin
+    select * into v_det from recepcion_detalle where id = p_detalle_id for update;
+    if not found then raise exception 'Esa jaba ya no existe (quizá ya se quitó).'; end if;
+    select * into v_lote from lotes where id = v_det.lote_id for update;
+
+    -- Lo que ya se procesó del lote tiene que caber en las jabas que quedan.
+    v_consumido := v_lote.kg_inicial - v_lote.kg_disponible;
+    if v_consumido > v_lote.kg_inicial - v_det.kg_real + 0.0005 then
+        raise exception 'Del lote % ya se procesaron % kg; sin esta jaba quedarían solo % kg. Corrige primero ese proceso.',
+            v_lote.codigo, v_consumido, v_lote.kg_inicial - v_det.kg_real;
+    end if;
+
+    delete from recepcion_detalle where id = p_detalle_id;          -- el trigger recalcula el lote (y la cascada)
+    delete from recepciones r
+     where r.id = v_det.recepcion_id
+       and not exists (select 1 from recepcion_detalle d where d.recepcion_id = r.id);
+
+    select count(*) into v_restantes from recepcion_detalle where lote_id = v_lote.id;
+    if v_restantes = 0
+       and not exists (select 1 from proceso_entradas where lote_id = v_lote.id)
+       and not exists (select 1 from proceso_salidas  where lote_id = v_lote.id) then
+        delete from lotes where id = v_lote.id;                     -- misma razón que en fn_anular_lote
+        v_borrado := true;
+    end if;
+
+    perform fn_log('info', 'correccion',
+        format('Jaba de %s kg quitada del lote %s%s%s', v_det.kg_real, v_lote.codigo,
+               case when v_borrado then ' (era la última: lote borrado)' else '' end,
+               coalesce(': ' || nullif(trim(p_motivo), ''), '')),
+        jsonb_build_object('detalle_id', v_det.id, 'recepcion_id', v_det.recepcion_id, 'lote_id', v_lote.id, 'codigo', v_lote.codigo,
+                           'kg_real', v_det.kg_real, 'precio_kg', v_det.precio_kg, 'lote_borrado', v_borrado, 'motivo', p_motivo),
+        null, null);
+    return v_borrado;
+end $$;
+
+grant execute on function fn_editar_lote(uuid, date, text), fn_anular_lote(uuid, text), fn_quitar_jaba(uuid, text) to authenticated;

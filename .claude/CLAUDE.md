@@ -20,8 +20,8 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `04_metricas_alertas.sql` | `v_stock_semaforo`, `v_alertas`, `fn_kpis`, `v_rendimiento_proveedor`, `parametros`, `stock_minimos`. |
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
-| `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 26 pruebas de las correcciones; se revierte solo. |
+| `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
+| `07_tests_correcciones_pgtap.sql` | 35 pruebas de las correcciones; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
 
 ## Modelo (lo esencial)
@@ -40,7 +40,8 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 - Venas/sangre/desperdicio **no son stock** ni disparan alertas de lote viejo.
 - Kilos que no cuadran quedan en `procesos.kg_merma_no_reg` y disparan alerta si superan `parametros.merma_max_pct`.
 - **Correcciones** (Stock → Por lote, o Lotes): kg y precio se editan en `recepcion_detalle` (la cascada hace el resto);
-  fecha y anulación van **solo por RPC** (`fn_editar_lote`, `fn_anular_lote`), nunca `update`/`delete` directo a `lotes`.
+  fecha, quitar una jaba y anulación van **solo por RPC** (`fn_editar_lote`, `fn_quitar_jaba`, `fn_anular_lote`), nunca `update`/`delete` directo a `lotes` ni `delete` a `recepcion_detalle` desde el cliente.
+  Caso típico: el mismo producto digitado dos veces el mismo día queda en UN lote con dos jabas → se quita la jaba repetida, no se anula el lote.
   Anular **borra** el lote en vez de marcarlo `anulado`: `fn_obtener_lote` busca por código y un lote anulado atraparía las jabas al volver a recibirlas.
   Lotes con `origen = 'proceso'` no se corrigen como lote: se corrige el proceso (`/procesar?id=…`) y `fn_procesar` reparte de nuevo.
 - `lotes` **no se audita** fila a fila (lo recalcula el sistema); su historia se reconstruye desde `recepcion_detalle`, `proceso_*` y `logs_app` (origen `correccion`).

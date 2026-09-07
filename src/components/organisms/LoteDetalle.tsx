@@ -21,11 +21,12 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
   const [edit, setEdit] = useState<Edit>({})
   const [cab, setCab] = useState({ fecha: lote.fecha, observaciones: lote.observaciones ?? '' })
   const [anular, setAnular] = useState<{ abierto: boolean; motivo: string }>({ abierto: false, motivo: '' })
+  const [quitar, setQuitar] = useState<{ jaba: RecepcionDetalle; motivo: string } | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null)
 
   useEffect(() => {
-    setMsg(null); setDet(null); setAnular({ abierto: false, motivo: '' })
+    setMsg(null); setDet(null); setAnular({ abierto: false, motivo: '' }); setQuitar(null)
     setCab({ fecha: lote.fecha, observaciones: lote.observaciones ?? '' })
     void srv.getDetalleLote(lote).then((d) => { setDet(d); const e: Edit = {}; d.compras.forEach((c) => { e[c.id] = { kg_real: c.kg_real, precio_kg: c.precio_kg } }); setEdit(e) })
   }, [lote])
@@ -42,6 +43,16 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
   const guardarCompra = (c: RecepcionDetalle) => accion(() => srv.actualizarCompra(c.id, edit[c.id]), 'Guardado. El costo de este lote y de todo lo que salió de él ya se recalculó.', onCambio)
   const guardarLote = () => accion(() => srv.editarLote(lote.id, cab), nuevoCodigo !== lote.codigo ? `Guardado. El lote ahora se llama ${nuevoCodigo}.` : 'Guardado.', onCambio)
   const confirmarAnular = () => accion(() => srv.anularLote(lote.id, anular.motivo), `Lote ${lote.codigo} anulado.`, onAnulado ?? onCambio)
+  const confirmarQuitar = async () => {
+    if (!quitar) return
+    setOcupado(true); setMsg(null)
+    try {
+      const loteBorrado = await srv.quitarJaba(quitar.jaba.id, quitar.motivo); setQuitar(null)
+      if (loteBorrado) { setMsg({ t: 'ok', m: `Era la única jaba: el lote ${lote.codigo} se eliminó.` }); (onAnulado ?? onCambio)?.() }
+      else { setMsg({ t: 'ok', m: 'Jaba quitada. El lote y sus costos ya se recalcularon.' }); onCambio?.() }
+    } catch (e) { setMsg({ t: 'error', m: (e as Error).message }) }
+    setOcupado(false)
+  }
 
   if (!det) return null
   const hijos = [...new Map(det.hijos.map((h) => [h.lote_hijo, h])).values()]
@@ -85,12 +96,24 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
       {det.compras.length > 0 && <>
         <h3 style={{ margin: '14px 0 6px' }}>Compra (editable)</h3>
         <DataTable<RecepcionDetalle> filas={det.compras} columnas={[
-          { key: 'reg', titulo: 'Registro', render: (c) => c.recepciones?.numero_registro ?? '—' },
+          { key: 'reg', titulo: 'Registro', render: (c) => <>{c.recepciones?.numero_registro ?? '—'}<Ayuda>{fmt.fecha(c.recepciones?.fecha)}{c.recepciones?.numero_factura && ` · fact. ${c.recepciones.numero_factura}`}</Ayuda></> },
           { key: 'kg', titulo: 'kg real', n: true, render: (c) => <Input tipo="number" chico step="0.001" value={edit[c.id]?.kg_real ?? ''} onChange={(e) => setEdit({ ...edit, [c.id]: { ...edit[c.id], kg_real: e.target.value } })} aria-label={`kg jaba ${c.id}`} /> },
           { key: 'precio', titulo: 'Precio $/kg', n: true, render: (c) => <Input tipo="number" chico step="0.0001" value={edit[c.id]?.precio_kg ?? ''} onChange={(e) => setEdit({ ...edit, [c.id]: { ...edit[c.id], precio_kg: e.target.value } })} aria-label={`precio jaba ${c.id}`} /> },
           { key: 'total', titulo: 'Total', n: true, render: (c) => fmt.usd(Number(edit[c.id]?.kg_real) * Number(edit[c.id]?.precio_kg)) },
-          { key: 'x', titulo: '', render: (c) => <Button tamano="chico" onClick={() => guardarCompra(c)} disabled={sinCambios(c) || ocupado}>Guardar</Button> },
-        ]} /></>}
+          { key: 'x', titulo: '', render: (c) => <span style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <Button tamano="chico" onClick={() => guardarCompra(c)} disabled={sinCambios(c) || ocupado}>Guardar</Button>
+            {editable && <Button tamano="chico" onClick={() => setQuitar({ jaba: c, motivo: '' })} disabled={ocupado} title="Quitar esta jaba del lote" aria-label={`Quitar jaba ${c.recepciones?.numero_registro ?? c.id}`}>Quitar</Button>}
+          </span> },
+        ]} />
+        {quitar && <Notice tipo="warn">
+          <b>¿Quitar la jaba del registro {quitar.jaba.recepciones?.numero_registro ?? '—'}</b> ({fmt.kg(quitar.jaba.kg_real)} kg a {fmt.usd4(quitar.jaba.precio_kg)}/kg)?
+          {det.compras.length === 1 ? ' Es la única jaba: el lote se eliminará.' : ' El lote se recalcula con las jabas que quedan.'} Queda registro en Actividad.
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+            <Input chico placeholder="Motivo (opcional)" value={quitar.motivo} onChange={(e) => setQuitar({ ...quitar, motivo: e.target.value })} style={{ flex: 1, minWidth: 200 }} aria-label="Motivo para quitar la jaba" />
+            <Button tamano="chico" variante="primario" onClick={confirmarQuitar} disabled={ocupado}>Sí, quitar</Button>
+            <Button tamano="chico" onClick={() => setQuitar(null)} disabled={ocupado}>Cancelar</Button>
+          </div>
+        </Notice>}</>}
 
       {det.padres.length > 0 && <>
         <h3 style={{ margin: '14px 0 6px' }}>Viene de</h3>

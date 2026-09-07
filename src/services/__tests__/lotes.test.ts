@@ -11,7 +11,7 @@ vi.mock('../../lib/supabase', () => ({
   ok: ({ data, error }: { data: unknown; error: { message?: string } | null }) => { if (error) throw new Error(error.message); return data },
 }))
 
-import { anularLote, editarLote } from '../lotes'
+import { anularLote, editarLote, quitarJaba } from '../lotes'
 
 beforeEach(() => { rpcs.length = 0; for (const k of Object.keys(respuestas)) delete respuestas[k] })
 
@@ -29,6 +29,22 @@ describe('editarLote', () => {
   it('propaga el mensaje de la base (lote repetido, fecha futura…)', async () => {
     respuestas.fn_editar_lote = { data: null, error: { message: 'Ya existe el lote 131AR020526 con esa fecha.' } }
     await expect(editarLote('L1', { fecha: '2026-05-02' })).rejects.toThrow('Ya existe el lote 131AR020526')
+  })
+})
+
+describe('quitarJaba', () => {
+  it('llama a fn_quitar_jaba y devuelve si el lote se borró', async () => {
+    respuestas.fn_quitar_jaba = { data: false, error: null }
+    expect(await quitarJaba('D1', 'registro repetido')).toBe(false)
+    expect(rpcs).toEqual([{ fn: 'fn_quitar_jaba', args: { p_detalle_id: 'D1', p_motivo: 'registro repetido' } }])
+  })
+  it('true cuando era la última jaba', async () => {
+    respuestas.fn_quitar_jaba = { data: true, error: null }
+    expect(await quitarJaba('D1')).toBe(true)
+  })
+  it('si lo procesado ya no cabría, la base lo impide', async () => {
+    respuestas.fn_quitar_jaba = { data: null, error: { message: 'Del lote 131AR200526 ya se procesaron 80.000 kg' } }
+    await expect(quitarJaba('D1')).rejects.toThrow('ya se procesaron 80.000 kg')
   })
 })
 

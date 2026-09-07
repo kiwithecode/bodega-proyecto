@@ -6,11 +6,12 @@
 create extension if not exists pgtap;
 
 begin;
-select plan(26);
+select plan(35);
 
--- Si estas dos fallan, falta cargar 07_correcciones.sql: todo lo demás va a fallar también.
+-- Si estas fallan, falta cargar (o volver a cargar) 07_correcciones.sql: todo lo demás va a fallar también.
 select has_function('fn_editar_lote', array['uuid','date','text'], 'existe fn_editar_lote (cargar 07_correcciones.sql)');
 select has_function('fn_anular_lote', array['uuid','text'], 'existe fn_anular_lote (cargar 07_correcciones.sql)');
+select has_function('fn_quitar_jaba', array['uuid','text'], 'existe fn_quitar_jaba (cargar 07_correcciones.sql)');
 
 create or replace function _p(c text) returns int language sql as $$ select id from productos where codigo = c $$;
 create or replace function _pr(c int) returns int language sql as $$ select id from proveedores where codigo = c $$;
@@ -79,6 +80,34 @@ select is((select count(*) from logs_app where origen = 'correccion' and mensaje
 -- Recepción de un solo lote: se va completa
 select fn_anular_lote((_lote(16,'AR','2026-05-09')).id);
 select is((select count(*) from recepciones where id = 'a2222222-2222-2222-2222-222222222222'), 0::bigint, 'la recepción vacía se borra');
+
+-- -----------------------------------------------------------------------------
+-- 3. Quitar una sola jaba (mismo producto digitado dos veces)
+-- -----------------------------------------------------------------------------
+insert into recepciones (id, fecha, proveedor_id, numero_registro) values ('c1111111-1111-1111-1111-111111111111', '2026-05-20', _pr(131), '8777');
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('c1111111-1111-1111-1111-111111111111', _p('AR'), 100, 6.0);
+insert into recepciones (id, fecha, proveedor_id, numero_registro) values ('c2222222-2222-2222-2222-222222222222', '2026-05-20', _pr(131), '88000');
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('c2222222-2222-2222-2222-222222222222', _p('AR'), 50, 7.0);
+select is((_lote(131,'AR','2026-05-20')).kg_inicial, 150.000, 'dos registros del mismo día se juntan en un lote');
+
+select is((select fn_quitar_jaba(id, 'registro repetido') from recepcion_detalle where recepcion_id = 'c2222222-2222-2222-2222-222222222222'), false, 'quitar la jaba repetida: el lote sigue');
+select is((_lote(131,'AR','2026-05-20')).kg_inicial, 100.000, 'el lote queda con la jaba buena');
+select is((_lote(131,'AR','2026-05-20')).costo_kg, 6.0000, 'el costo se recalculó sin la jaba quitada');
+select is((select count(*) from recepciones where id = 'c2222222-2222-2222-2222-222222222222'), 0::bigint, 'la recepción que quedó vacía se borra');
+
+-- Si ya se procesó más de lo que quedaría, no deja
+insert into procesos (id, tipo_proceso_id, fecha) values ('c3333333-3333-3333-3333-333333333333', (select id from tipos_proceso where codigo='LIMPIEZA'), '2026-05-21');
+insert into proceso_entradas (proceso_id, lote_id, kg_tomados) values ('c3333333-3333-3333-3333-333333333333', (_lote(131,'AR','2026-05-20')).id, 80);
+insert into proceso_salidas (proceso_id, producto_id, rol, kg, precio_credito) values ('c3333333-3333-3333-3333-333333333333', _p('ARL'), 'principal', 80, null);
+select fn_procesar('c3333333-3333-3333-3333-333333333333');
+select throws_like($$ select fn_quitar_jaba(id) from recepcion_detalle where recepcion_id = 'c1111111-1111-1111-1111-111111111111' $$,
+  '%ya se procesaron 80.000 kg%', 'no quita una jaba si lo procesado ya no cabría');
+
+-- Última jaba de un lote sin uso: el lote se borra
+insert into recepciones (id, fecha, proveedor_id) values ('c4444444-4444-4444-4444-444444444444', '2026-05-22', _pr(16));
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('c4444444-4444-4444-4444-444444444444', _p('AR'), 20, 6.5);
+select is((select fn_quitar_jaba(id) from recepcion_detalle where recepcion_id = 'c4444444-4444-4444-4444-444444444444'), true, 'última jaba: devuelve true');
+select is((select count(*) from lotes where codigo = '16AR220526'), 0::bigint, 'y el lote desaparece');
 
 select * from finish();
 rollback;
