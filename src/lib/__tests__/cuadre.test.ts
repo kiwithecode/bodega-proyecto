@@ -52,6 +52,12 @@ describe('validarProceso', () => {
     const s: SalidaForm[] = [{ producto_id: 1, rol: 'subproducto', kg: '5', precio_credito: '', conserva_proveedor: true }]
     expect(validarProceso(calcularBalance(entradas, s, lotes), entradas, s, lotes, true)).toMatch(/precio de crédito/)
   })
+  it('con sobrante bloquea, salvo que la persona lo acepte explícitamente', () => {
+    const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '120', precio_credito: '', conserva_proveedor: true }]
+    const b = calcularBalance(entradas, s, lotes)
+    expect(validarProceso(b, entradas, s, lotes, true)).toMatch(/sobran 3,50 kg/)
+    expect(validarProceso(b, entradas, s, lotes, true, true)).toBeNull()
+  })
   it('rechaza más kilos de los disponibles solo en proceso nuevo', () => {
     const e: EntradaForm[] = [{ lote_id: 'L1', kg_tomados: '200', kg_devueltos: '' }]
     const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '10', precio_credito: '', conserva_proveedor: true }]

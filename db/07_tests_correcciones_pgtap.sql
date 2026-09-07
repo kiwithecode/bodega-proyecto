@@ -1,12 +1,12 @@
 -- =============================================================================
---  07 · PRUEBAS de fn_editar_lote y fn_anular_lote (pgTAP)
---  Requiere 01–05 y 07_correcciones.sql. Todo dentro de una transacción que se
+--  07 · PRUEBAS de fn_editar_lote, fn_quitar_jaba, fn_anular_lote (07) y sobrante (10) (pgTAP)
+--  Requiere 01–05, 07_correcciones.sql y 10_sobrante.sql. Todo dentro de una transacción que se
 --  revierte al final: NO deja datos. Cualquier línea "not ok" es una falla.
 -- =============================================================================
 create extension if not exists pgtap;
 
 begin;
-select plan(35);
+select plan(40);
 
 -- Si estas fallan, falta cargar (o volver a cargar) 07_correcciones.sql: todo lo demás va a fallar también.
 select has_function('fn_editar_lote', array['uuid','date','text'], 'existe fn_editar_lote (cargar 07_correcciones.sql)');
@@ -108,6 +108,23 @@ insert into recepciones (id, fecha, proveedor_id) values ('c4444444-4444-4444-44
 insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('c4444444-4444-4444-4444-444444444444', _p('AR'), 20, 6.5);
 select is((select fn_quitar_jaba(id) from recepcion_detalle where recepcion_id = 'c4444444-4444-4444-4444-444444444444'), true, 'última jaba: devuelve true');
 select is((select count(*) from lotes where codigo = '16AR220526'), 0::bigint, 'y el lote desaparece');
+
+-- -----------------------------------------------------------------------------
+-- 4. Sobrante (10_sobrante.sql): salidas > entrada se cierra, no descuenta merma y alerta
+-- -----------------------------------------------------------------------------
+insert into recepciones (id, fecha, proveedor_id) values ('d1111111-1111-1111-1111-111111111111', current_date - 1, _pr(131));
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('d1111111-1111-1111-1111-111111111111', _p('AR'), 109, 6.6);
+insert into procesos (id, tipo_proceso_id, fecha) values ('d2222222-2222-2222-2222-222222222222', (select id from tipos_proceso where codigo='LIMPIEZA'), current_date);
+insert into proceso_entradas (proceso_id, lote_id, kg_tomados) values ('d2222222-2222-2222-2222-222222222222', (_lote(131,'AR',current_date - 1)).id, 109);
+insert into proceso_salidas (proceso_id, producto_id, rol, kg, precio_credito) values
+  ('d2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 99.10, null),
+  ('d2222222-2222-2222-2222-222222222222', _p('ER'),  'subproducto', 7.80, 3.3),
+  ('d2222222-2222-2222-2222-222222222222', _p('VNR'), 'merma',       8.15, null);
+select lives_ok($$ select fn_procesar('d2222222-2222-2222-2222-222222222222') $$, 'un proceso con salidas > entrada se cierra igual');
+select is((select kg_merma_no_reg from procesos where id = 'd2222222-2222-2222-2222-222222222222'), -6.050, 'el sobrante queda como merma no registrada negativa');
+select cmp_ok((select kg_sobrante from fn_kpis(current_date, current_date)), '>=', 6.050, 'fn_kpis expone el sobrante');
+select cmp_ok((select kg_merma from fn_kpis(current_date, current_date)), '>=', 8.150, 'la merma del período no se descuenta con el sobrante');
+select is((select count(*) from v_alertas where tipo = 'SOBRANTE' and proceso_id = 'd2222222-2222-2222-2222-222222222222'), 1::bigint, 'aparece la alerta SOBRANTE');
 
 select * from finish();
 rollback;

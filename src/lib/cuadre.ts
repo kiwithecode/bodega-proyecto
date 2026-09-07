@@ -1,4 +1,4 @@
-import { num } from './format'
+import { fmt, num } from './format'
 import type { EntradaForm, SalidaForm, Rol } from './types'
 
 export interface LoteRef { id: string; costo_kg: number; kg_disponible: number; proveedor_codigo?: number | null }
@@ -28,14 +28,18 @@ export function calcularBalance(entradas: EntradaForm[], salidas: SalidaForm[], 
     faltan, sobra: faltan < -0.0005, cuadra: Math.abs(faltan) <= 0.0005 && consumo > 0, proveedores }
 }
 
-/** Validación previa al guardado. Devuelve el mensaje de error o null si todo está bien. */
-export function validarProceso(b: Balance, entradas: EntradaForm[], salidas: SalidaForm[], lotes: LoteRef[], esNuevo: boolean): string | null {
+/**
+ * Validación previa al guardado. Devuelve el mensaje de error o null si todo está bien.
+ * `permitirSobra`: la persona aceptó cerrar aunque las salidas pesen más que la entrada
+ * (error de pesaje); la base lo guarda como kg_merma_no_reg negativo y dispara la alerta SOBRANTE.
+ */
+export function validarProceso(b: Balance, entradas: EntradaForm[], salidas: SalidaForm[], lotes: LoteRef[], esNuevo: boolean, permitirSobra = false): string | null {
   const ent = entradas.filter((e) => e.lote_id && num(e.kg_tomados) > 0)
   const sal = salidas.filter((s) => s.producto_id && num(s.kg) > 0)
   if (ent.length === 0) return 'Agrega al menos un lote de entrada con kilos.'
   if (sal.length === 0) return 'Agrega al menos una salida con kilos.'
   if (sal.some((s) => s.rol === 'subproducto' && String(s.precio_credito) === '')) return 'Los subproductos necesitan precio de crédito.'
-  if (b.sobra) return `Las salidas suman ${b.kgSalidas.toFixed(3)} kg pero solo entraron ${b.consumo.toFixed(3)} kg.`
+  if (b.sobra && !permitirSobra) return `Las salidas suman ${fmt.kg(b.kgSalidas)} kg y solo entraron ${fmt.kg(b.consumo)} kg: sobran ${fmt.kg(-b.faltan)} kg. Revisa los pesos; si fue un error de pesaje, marca "Cerrar con sobrante".`
   if (esNuevo) for (const e of ent) {
     const l = lotes.find((x) => x.id === e.lote_id)
     if (l && num(e.kg_tomados) > l.kg_disponible + 0.0005) return `El lote solo tiene ${l.kg_disponible.toFixed(3)} kg disponibles.`

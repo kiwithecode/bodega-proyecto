@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Ayuda, Button, Input, Mono, Notice, Select } from '../components/atoms'
+import { Ayuda, Button, Checkbox, Input, Mono, Notice, Select } from '../components/atoms'
 import { CuadreBar, Field } from '../components/molecules'
 import { Grid, Panel, PanelPie, ProcesoEntradas, ProcesoSalidas, entradaVacia, salidaVacia } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
@@ -25,6 +25,7 @@ export default function Procesar() {
   const [entradas, setEntradas] = useState<EntradaForm[]>([entradaVacia()])
   const [salidas, setSalidas] = useState<SalidaForm[]>(salidasIniciales())
   const [error, setError] = useState(''); const [guardando, setGuardando] = useState(false)
+  const [aceptaSobra, setAceptaSobra] = useState(false)   // cerrar aunque las salidas pesen más que la entrada
   const [resultado, setResultado] = useState<srv.ResultadoProceso | null>(null)
   const up = <K extends keyof srv.CabeceraProceso>(k: K, v: srv.CabeceraProceso[K]) => setCab((c) => ({ ...c, [k]: v }))
 
@@ -50,7 +51,7 @@ export default function Procesar() {
   const guardar = async () => {
     setError(''); setResultado(null)
     if (!cab.tipo_proceso_id) return setError('Elige el tipo de proceso.')
-    const err = validarProceso(b, entradas, salidas, lotes, !procesoId)
+    const err = validarProceso(b, entradas, salidas, lotes, !procesoId, aceptaSobra)
     if (err) return setError(err)
     setGuardando(true)
     try {
@@ -59,7 +60,7 @@ export default function Procesar() {
         entradas: entradas.filter((e) => e.lote_id && Number(e.kg_tomados) > 0),
         salidas: salidas.filter((s) => s.producto_id && Number(s.kg) > 0),
       })
-      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); void lotesQ.recargar(); void obreros.recargar()
+      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); setAceptaSobra(false); void lotesQ.recargar(); void obreros.recargar()
       if (procesoId) window.history.replaceState(null, '', '/procesar')
     } catch (e) { setError((e as Error).message) }
     setGuardando(false)
@@ -70,6 +71,7 @@ export default function Procesar() {
       <Notice tipo="error">{tipos.error || productos.error || lotesQ.error}</Notice>
       {resultado && <Notice tipo="ok">Proceso cerrado. Entrada {fmt.kg(resultado.proceso.kg_consumidos)} kg ({fmt.usd(resultado.proceso.costo_entrada)}), crédito subproductos {fmt.usd(resultado.proceso.credito_subproductos)}, costo neto {fmt.usd(resultado.proceso.costo_neto)}.
         {Number(resultado.proceso.kg_merma_no_reg) > 0 && <> Quedaron <b>{fmt.kg(resultado.proceso.kg_merma_no_reg)} kg sin justificar</b>.</>}
+        {Number(resultado.proceso.kg_merma_no_reg) < -0.0005 && <> Las salidas pesaron <b>{fmt.kg(-Number(resultado.proceso.kg_merma_no_reg))} kg más que la entrada</b>: quedó registrado como sobrante y aparece en Alertas para revisar el pesaje.</>}
         <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg</li>)}</ul></Notice>}
       {procesoId && <Notice tipo="warn">Estás cerrando un proceso que quedó pendiente. <Link to="/procesar">Empezar uno nuevo</Link></Notice>}
       <Panel>
@@ -92,6 +94,10 @@ export default function Procesar() {
       <Panel titulo="Sale">
         <CuadreBar consumo={b.consumo} principal={b.kgPrincipal} subproducto={b.kgSubproducto} merma={b.kgMerma} />
         <ProcesoSalidas salidas={salidas} onChange={setSalidas} productos={productos.data} kgSalidas={b.kgSalidas} costoNeto={b.costoNeto} costoPrincipal={b.costoPrincipal} />
+        {b.sobra && <Notice tipo="warn">Las salidas pesan <b>{fmt.kg(-b.faltan)} kg más</b> que lo que entró ({fmt.kg(b.consumo)} kg). Eso no puede pasar físicamente: alguien pesó o digitó mal.
+          Revisa primero los kg de las salidas. Si lo que pesó mal fue la jaba de entrada, corrígela en <Link to="/stock">Stock → Corregir lote</Link> y vuelve a tomar los kilos.
+          Si igual necesitas cerrar ahora, marca la casilla: el sobrante queda registrado y sale en Alertas.
+          <div style={{ marginTop: 8 }}><Checkbox checked={aceptaSobra} onChange={(e) => setAceptaSobra(e.target.checked)}>Cerrar con sobrante de {fmt.kg(-b.faltan)} kg (error de pesaje)</Checkbox></div></Notice>}
         <PanelPie izquierda={<Button onClick={() => setSalidas((ss) => [...ss, salidaVacia('principal')])}>Agregar salida</Button>}>
           <Notice tipo="error" style={{ margin: 0 }}>{error}</Notice>
           <Button variante="primario" onClick={guardar} disabled={guardando}>{guardando ? 'Cerrando…' : 'Cerrar proceso'}</Button>

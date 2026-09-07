@@ -21,8 +21,9 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 35 pruebas de las correcciones; se revierte solo. |
+| `07_tests_correcciones_pgtap.sql` | 40 pruebas de correcciones y sobrante; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `10_sobrante.sql` | Salidas > entrada: `fn_kpis` y vistas usan `greatest(kg_merma_no_reg,0)` + `kg_sobrante`; alerta `SOBRANTE` (nivel 3). |
 | `09_pendientes_cerrados.sql` | HUP confirmado (`por_confirmar = false`) y `cron.schedule('limpiar-logs')` semanal (domingo 03:00 Quito) para `fn_limpiar_logs()`. |
 
 ## Modelo (lo esencial)
@@ -40,6 +41,8 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
   Lotes hijos que se fusionan (misma clave) → promedio ponderado. Editar precio de compra **recalcula en cascada** todos los descendientes.
 - Venas/sangre/desperdicio **no son stock** ni disparan alertas de lote viejo.
 - Kilos que no cuadran quedan en `procesos.kg_merma_no_reg` y disparan alerta si superan `parametros.merma_max_pct`.
+  Si las salidas pesan MÁS que la entrada (error humano de pesaje), `kg_merma_no_reg` queda negativo (= sobrante): el frontend pide marcar
+  "Cerrar con sobrante" (`validarProceso(..., permitirSobra)`), la base lo cierra, no lo descuenta de la merma y dispara la alerta `SOBRANTE`.
 - **Correcciones** (Stock → Por lote, o Lotes): kg y precio se editan en `recepcion_detalle` (la cascada hace el resto);
   fecha, quitar una jaba y anulación van **solo por RPC** (`fn_editar_lote`, `fn_quitar_jaba`, `fn_anular_lote`), nunca `update`/`delete` directo a `lotes` ni `delete` a `recepcion_detalle` desde el cliente.
   Caso típico: el mismo producto digitado dos veces el mismo día queda en UN lote con dos jabas → se quita la jaba repetida, no se anula el lote.

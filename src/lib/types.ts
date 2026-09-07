@@ -55,12 +55,12 @@ export interface Kpis {
   kg_recibidos: number; compras_usd: number; recepciones: number; proveedores_distintos: number
   kg_procesados: number; kg_principal: number; kg_subproductos: number; kg_merma: number
   rendimiento_pct: number | null; merma_pct: number | null; credito_subproductos: number
-  valor_stock_actual: number; kg_stock_actual: number; lotes_disponibles: number
+  valor_stock_actual: number; kg_stock_actual: number; lotes_disponibles: number; kg_sobrante?: number
 }
 /** v_metricas_diarias */
 export interface MetricaDiaria {
   fecha: string; kg_recibidos: number; compras_usd: number; kg_procesados: number; kg_principal: number
-  kg_subproductos: number; kg_merma: number; credito_subproductos: number; costo_neto: number; rendimiento_pct: number | null
+  kg_subproductos: number; kg_merma: number; credito_subproductos: number; costo_neto: number; rendimiento_pct: number | null; kg_sobrante?: number
 }
 /** v_costo_semanal */
 export interface CostoSemanal { producto_codigo: string; producto: string; semana: string; costo_kg: number; kg: number }
