@@ -68,8 +68,8 @@ function Proveedores() {
             { key: 'nombre', titulo: 'Nombre', render: (p) => edit?.id === p.id ? <Input chico value={edit.nombre} onChange={(e) => setEdit({ ...edit, nombre: e.target.value })} /> : p.nombre },
             { key: 'ac', titulo: 'Acuerdo', render: (p) => edit?.id === p.id ? <Input chico value={edit.acuerdo_limpieza ?? ''} onChange={(e) => setEdit({ ...edit, acuerdo_limpieza: e.target.value })} /> : <Ayuda>{p.acuerdo_limpieza}</Ayuda> },
             { key: 'x', titulo: '', render: (p) => edit?.id === p.id
-              ? <span style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap' }}><Checkbox checked={edit.activo} onChange={(e) => setEdit({ ...edit, activo: e.target.checked })}>activo</Checkbox><Button tamano="chico" onClick={guardar}>Guardar</Button><Button tamano="chico" onClick={() => setEdit(null)}>Cancelar</Button></span>
-              : <Button tamano="chico" onClick={() => setEdit({ ...p })}>Editar</Button> },
+              ? <span style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap' }}><Checkbox checked={edit.activo} onChange={(e) => setEdit({ ...edit, activo: e.target.checked })}>activo</Checkbox><Button tamano="chico" variante="primario" onClick={guardar}>Guardar</Button><Button tamano="chico" onClick={() => setEdit(null)}>Cancelar</Button></span>
+              : <Button tamano="chico" variante="secundario" onClick={() => setEdit({ ...p })}>Editar</Button> },
           ]} />
         </Panel>
       </Grid>

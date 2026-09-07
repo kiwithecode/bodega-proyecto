@@ -1,8 +1,32 @@
-.btn { height: var(--control-h); padding: 0 18px; border-radius: var(--radius); border: 1px solid var(--line); background: #fff; cursor: pointer; font-weight: 500; white-space: nowrap; }
-.btn:hover { background: var(--surface-2); }
-.btn:disabled { opacity: .5; cursor: default; }
-.primario { background: var(--rojo); border-color: var(--rojo); color: #fff; }
-.primario:hover { background: var(--rojo-2); }
-.texto { border-color: transparent; background: transparent; text-decoration: underline; padding: 0; height: auto; }
-.chico { height: 32px; padding: 0 10px; font-size: 13.5px; }
+/* Jerarquía: primario (rojo sólido) = confirmar/guardar · secundario (azul contorno) = abrir/editar
+   · peligro (rojo contorno) = quitar/anular · normal (blanco) = neutro (cancelar, cerrar, exportar) */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--control-h); padding: 0 18px; border-radius: var(--radius);
+  border: 1px solid var(--ink-3); background: #fff; color: var(--ink);
+  cursor: pointer; font-weight: 600; font-size: 15px; white-space: nowrap; line-height: 1;
+  transition: background-color .12s, border-color .12s, box-shadow .12s, transform .05s;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--ink-2); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid var(--azul-suave); outline-offset: 1px; border-color: var(--azul); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn:disabled:hover { background: #fff; border-color: var(--ink-3); }
+
+.primario { background: var(--rojo); border-color: var(--rojo); color: #fff; box-shadow: 0 1px 2px rgba(155, 28, 46, .35); }
+.primario:hover { background: var(--rojo-2); border-color: var(--rojo-2); }
+.primario:disabled, .primario:disabled:hover { background: var(--rojo); border-color: var(--rojo); }
+
+.secundario { background: var(--azul-suave); border-color: var(--azul); color: var(--azul); }
+.secundario:hover { background: var(--azul); color: #fff; }
+.secundario:disabled:hover { background: var(--azul-suave); border-color: var(--azul); color: var(--azul); }
+
+.peligro { background: #fff; border-color: var(--rojo); color: var(--rojo); }
+.peligro:hover { background: var(--rojo-suave); border-color: var(--rojo-2); color: var(--rojo-2); }
+.peligro:disabled:hover { background: #fff; border-color: var(--rojo); color: var(--rojo); }
+
+.texto { border-color: transparent; background: transparent; text-decoration: underline; padding: 0; height: auto; font-weight: 600; color: var(--azul); box-shadow: none; }
+.texto:hover { background: transparent; border-color: transparent; color: var(--rojo); }
+
+.chico { height: var(--control-h-sm); padding: 0 12px; font-size: 13.5px; }
 .bloque { width: 100%; }

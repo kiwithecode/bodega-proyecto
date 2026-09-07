@@ -23,6 +23,7 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
 | `07_tests_correcciones_pgtap.sql` | 35 pruebas de las correcciones; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `09_pendientes_cerrados.sql` | HUP confirmado (`por_confirmar = false`) y `cron.schedule('limpiar-logs')` semanal (domingo 03:00 Quito) para `fn_limpiar_logs()`. |
 
 ## Modelo (lo esencial)
 - **Todo es un lote.** `lotes` es la tabla central: nace de una recepción o de un proceso, tiene `kg_disponible` y `costo_kg`.
@@ -63,6 +64,8 @@ src/pages/      una por ruta; componen organismos y llaman servicios
 - Para añadir pantalla: servicio → organismos que falten → página → una línea en `RUTAS` de `App.tsx`. El menú sale de ese array.
 - Nada de CSS global nuevo: solo `styles/tokens.css` y CSS Modules. Sin Tailwind.
 - Diseño: gris acero de fondo, tinta oscura, un solo acento rojo (`--rojo`) para acción principal y alertas críticas. Números tabulares, inputs altos.
+- Botones (`Button variante=`): `primario` rojo sólido = confirmar/guardar/cerrar proceso · `secundario` azul contorno = abrir/editar/ver (Corregir, Editar, Ver lotes)
+  · `peligro` rojo contorno = quitar/anular (el "Sí, …" de la confirmación es `primario`) · normal blanco = neutro (Cancelar, Cerrar, Exportar, Agregar fila) · `texto` = enlace.
 
 ## Comandos
 ```bash
@@ -84,7 +87,9 @@ No hay Postgres local ni Docker en la máquina de Kevin: las pruebas pgTAP se co
 - Los servicios devuelven `PromiseLike` (builder de Supabase): para `.catch` en páginas, envolver con `Promise.resolve(...)`.
 
 ## Pendientes conocidos
-- Código de **hueso pollo** (`HUP` propuesto, `por_confirmar = true`) — confirmar con bodega.
 - Proveedores 17 y 48 son ambos "JUAN SANCHEZ": ¿misma persona?
 - Fase 2: fileteada y acumulación de goulash como pantallas guiadas (hoy se hacen con Procesar genérico).
-- pg_cron para `fn_limpiar_logs()` semanal.
+
+## Cerrados (07/09/2026)
+- `HUP` hueso pollo confirmado por la bodega (`09_pendientes_cerrados.sql`; el seed ya lo trae en `false`).
+- Limpieza semanal de logs con pg_cron (`09_pendientes_cerrados.sql`). Requiere la extensión activa en el proyecto de Supabase.

@@ -139,7 +139,7 @@ select nivel, count(*) filter (where ts > now() - interval '24 hours') as ultima
   from logs_app group by nivel;
 
 -- -----------------------------------------------------------------------------
--- 4. RETENCIÓN (llamar cada tanto; con pg_cron: select cron.schedule('limpiar-logs','0 3 * * 0',$$select fn_limpiar_logs()$$))
+-- 4. RETENCIÓN — programada semanalmente con pg_cron en 09_pendientes_cerrados.sql
 -- -----------------------------------------------------------------------------
 create or replace function fn_limpiar_logs(p_dias_logs int default 90, p_dias_auditoria int default 730)
 returns table (logs_borrados bigint, auditoria_borrada bigint) language plpgsql security definer as $$

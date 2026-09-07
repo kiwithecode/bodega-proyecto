@@ -21,7 +21,7 @@ Usuario: Supabase → Authentication → Users → Add user (Auto Confirm).
 `npm run typecheck` pasa con `strict`.
 
 ## Base de datos (`db/`)
-`00_reset` · `01_schema` · `02_seed_catalogos` · `03_alta_catalogos` · `04_metricas_alertas` · `05_auditoria_logs` · **`07_correcciones`** (editar fecha / quitar una jaba / anular lote; obligatorio para que Stock y Lotes puedan corregir) · **`08_proceso_obrero`** (columna `procesos.obrero`, `fn_obreros`; obligatorio para el campo "Quién procesó"). Se cargan en orden en el SQL Editor. Los `*_tests_pgtap.sql` se corren aparte y no dejan datos.
+`00_reset` · `01_schema` · `02_seed_catalogos` · `03_alta_catalogos` · `04_metricas_alertas` · `05_auditoria_logs` · **`07_correcciones`** (editar fecha / quitar una jaba / anular lote; obligatorio para que Stock y Lotes puedan corregir) · **`08_proceso_obrero`** (columna `procesos.obrero`, `fn_obreros`; obligatorio para el campo "Quién procesó") · `09_pendientes_cerrados` (HUP confirmado y limpieza semanal de logs con pg_cron). Se cargan en orden en el SQL Editor. Los `*_tests_pgtap.sql` se corren aparte y no dejan datos.
 
 ## Estructura
 ```

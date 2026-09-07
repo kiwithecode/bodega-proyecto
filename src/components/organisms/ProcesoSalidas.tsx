@@ -26,7 +26,7 @@ export function ProcesoSalidas({ salidas, onChange, productos, kgSalidas, costoN
         ? <Input tipo="number" chico step="0.0001" min="0" value={s.precio_credito} onChange={(e) => set(i, 'precio_credito', e.target.value)} aria-label={`precio crédito fila ${i + 1}`} />
         : <Ayuda>{s.rol === 'principal' ? 'se calcula' : '0'}</Ayuda> },
     { key: 'prov', titulo: 'Lote hijo', render: (s, i) => <Select chico value={s.conserva_proveedor ? '1' : '0'} onChange={(e) => set(i, 'conserva_proveedor', e.target.value === '1')} opciones={[{ value: '1', label: 'Con proveedor' }, { value: '0', label: 'Mezcla (sin proveedor)' }]} /> },
-    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" onClick={() => onChange(salidas.filter((_, j) => j !== i))}>×</Button> },
+    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" variante="peligro" onClick={() => onChange(salidas.filter((_, j) => j !== i))}>×</Button> },
   ]
   const total = [`Costo neto ${fmt.usd(costoNeto)}`, '', fmt.kg(kgSalidas), costoPrincipal > 0 ? <>Costo real del producto: <b>{fmt.usd4(costoPrincipal)}/kg</b></> : '', '', '']
   return <DataTable columnas={columnas} filas={salidas} filaKey={(_, i) => i} total={total} />

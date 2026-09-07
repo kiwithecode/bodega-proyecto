@@ -22,7 +22,7 @@ export function RecepcionLineas({ lineas, onChange, productos, provCodigo, fecha
     { key: 'total', titulo: 'Total', n: true, render: (l) => fmt.usd(num(l.kg_real) * num(l.precio_kg)) },
     { key: 'lote', titulo: 'Lote', render: (l) => <Mono>{codigoLote(provCodigo, prod(l)?.codigo, fecha)}</Mono> },
     { key: 'cal', titulo: 'Calidad', render: (l, i) => <Select chico value={l.calidad_ok ? '1' : '0'} onChange={(e) => set(i, 'calidad_ok', e.target.value === '1')} opciones={[{ value: '1', label: 'Buena' }, { value: '0', label: 'Con observación' }]} /> },
-    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" onClick={() => quitar(i)} title="Quitar fila">×</Button> },
+    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" variante="peligro" onClick={() => quitar(i)} title="Quitar fila">×</Button> },
   ]
   return <DataTable columnas={columnas} filas={lineas} filaKey={(_, i) => i} vacio="Agrega una fila." total={[`${validas.length} fila(s)`, fmt.kg(kg), '', '', fmt.usd(total), '', '', '']} />
 }

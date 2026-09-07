@@ -1,7 +1,7 @@
 -- =============================================================================
 --  DATOS INICIALES  ·  ejecutar DESPUÉS de 01_schema.sql
 --  Fuentes: O-19b Código de proveedores, NUEVOS CODIGOS (pdf), NUEVOS_CODIGOS_QUE_SE_AUMENTO.xlsx
---  Catálogo CONFIRMADO por la bodega el 07/09/2026. Único pendiente: HUP (hueso pollo).
+--  Catálogo CONFIRMADO por la bodega el 07/09/2026 (HUP hueso pollo incluido).
 -- =============================================================================
 
 insert into especies (codigo, nombre) values
@@ -272,7 +272,7 @@ insert into productos (codigo, nombre, especie_id, rol_defecto, interno, por_con
   ('LP', 'Patas pollo', (select id from especies where codigo='P'), 'principal', false, false),
   ('JP', 'Hígado pollo', (select id from especies where codigo='P'), 'principal', false, false),
   ('HP', 'Molleja pollo', (select id from especies where codigo='P'), 'principal', false, false),
-  ('HUP', 'Hueso pollo', (select id from especies where codigo='P'), 'subproducto', false, true),
+  ('HUP', 'Hueso pollo', (select id from especies where codigo='P'), 'subproducto', false, false),
   ('DPA', 'Alas de pollo con espaldilla', (select id from especies where codigo='P'), 'principal', false, false),
   ('AR', 'Pulpa res', (select id from especies where codigo='R'), 'principal', false, false),
   ('AREN', 'Res especial enteras', (select id from especies where codigo='R'), 'principal', false, false),

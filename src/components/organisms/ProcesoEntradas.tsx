@@ -17,7 +17,7 @@ export function ProcesoEntradas({ entradas, onChange, lotes, consumo, costoEntra
     { key: 'tom', titulo: 'kg tomados', n: true, render: (e, i) => <Input tipo="number" chico step="0.001" min="0" value={e.kg_tomados} onChange={(ev) => set(i, 'kg_tomados', ev.target.value)} aria-label={`kg tomados fila ${i + 1}`} /> },
     { key: 'dev', titulo: 'kg devueltos a cámara', n: true, render: (e, i) => <Input tipo="number" chico step="0.001" min="0" value={e.kg_devueltos} onChange={(ev) => set(i, 'kg_devueltos', ev.target.value)} placeholder="0" /> },
     { key: 'costo', titulo: 'Costo $/kg', n: true, render: (e) => { const l = lote(e); return l ? fmt.usd4(l.costo_kg) : '' } },
-    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" onClick={() => onChange(entradas.filter((_, j) => j !== i))}>×</Button> },
+    { key: 'x', titulo: '', render: (_, i) => <Button tamano="chico" variante="peligro" onClick={() => onChange(entradas.filter((_, j) => j !== i))}>×</Button> },
   ]
   return <DataTable columnas={columnas} filas={entradas} filaKey={(_, i) => i} total={['Consumo real', fmt.kg(consumo), '', fmt.usd(costoEntrada), '']} />
 }

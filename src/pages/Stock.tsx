@@ -55,7 +55,7 @@ export default function Stock() {
             { key: 'kd', titulo: 'kg disp.', n: true, render: (l) => <b>{fmt.kg(l.kg_disponible)}</b> },
             { key: 'c', titulo: 'Costo $/kg', n: true, render: (l) => fmt.usd4(l.costo_kg) },
             { key: 'v', titulo: 'Valor', n: true, render: (l) => fmt.usd(l.valor_stock) },
-            { key: 'x', titulo: '', render: (l) => <Button tamano="chico" onClick={() => abrirLote(l)} aria-label={`Corregir ${l.codigo}`}>{l.origen === 'proceso' ? 'Ver' : 'Corregir'}</Button> },
+            { key: 'x', titulo: '', render: (l) => <Button tamano="chico" variante="secundario" onClick={() => abrirLote(l)} aria-label={`Corregir ${l.codigo}`}>{l.origen === 'proceso' ? 'Ver' : 'Corregir'}</Button> },
           ]} />
         </>}
       </Panel>

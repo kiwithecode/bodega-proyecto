@@ -60,7 +60,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
   const consumido = det.hijos.length > 0
   const editable = !deProceso && lote.estado !== 'anulado'
 
-  let zonaAnular = <Button tamano="chico" onClick={() => setAnular({ abierto: true, motivo: '' })}>Anular lote…</Button>
+  let zonaAnular = <Button tamano="chico" variante="peligro" onClick={() => setAnular({ abierto: true, motivo: '' })}>Anular lote…</Button>
   if (consumido) zonaAnular = <Ayuda>Ya se tomaron kilos de este lote en un proceso, así que no se puede anular. Si la recepción fue un error, corrige o borra primero ese proceso.</Ayuda>
   else if (anular.abierto) zonaAnular = (
     <Notice tipo="warn">
@@ -89,7 +89,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
             <Input tipo="date" chico value={cab.fecha} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setCab({ ...cab, fecha: e.target.value })} aria-label="Fecha del lote" /></Field>
           <Field label="Observaciones" style={{ gridColumn: 'span 2' }}>
             <Input chico value={cab.observaciones} onChange={(e) => setCab({ ...cab, observaciones: e.target.value })} aria-label="Observaciones del lote" /></Field>
-          <Field style={{ alignSelf: 'end' }}><Button tamano="chico" onClick={guardarLote} disabled={cabSinCambios || ocupado || cab.fecha.length !== 10}>Guardar lote</Button></Field>
+          <Field style={{ alignSelf: 'end' }}><Button tamano="chico" variante="primario" onClick={guardarLote} disabled={cabSinCambios || ocupado || cab.fecha.length !== 10}>Guardar lote</Button></Field>
         </Grid>
       </>}
 
@@ -101,8 +101,8 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
           { key: 'precio', titulo: 'Precio $/kg', n: true, render: (c) => <Input tipo="number" chico step="0.0001" value={edit[c.id]?.precio_kg ?? ''} onChange={(e) => setEdit({ ...edit, [c.id]: { ...edit[c.id], precio_kg: e.target.value } })} aria-label={`precio jaba ${c.id}`} /> },
           { key: 'total', titulo: 'Total', n: true, render: (c) => fmt.usd(Number(edit[c.id]?.kg_real) * Number(edit[c.id]?.precio_kg)) },
           { key: 'x', titulo: '', render: (c) => <span style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-            <Button tamano="chico" onClick={() => guardarCompra(c)} disabled={sinCambios(c) || ocupado}>Guardar</Button>
-            {editable && <Button tamano="chico" onClick={() => setQuitar({ jaba: c, motivo: '' })} disabled={ocupado} title="Quitar esta jaba del lote" aria-label={`Quitar jaba ${c.recepciones?.numero_registro ?? c.id}`}>Quitar</Button>}
+            <Button tamano="chico" variante="primario" onClick={() => guardarCompra(c)} disabled={sinCambios(c) || ocupado}>Guardar</Button>
+            {editable && <Button tamano="chico" variante="peligro" onClick={() => setQuitar({ jaba: c, motivo: '' })} disabled={ocupado} title="Quitar esta jaba del lote" aria-label={`Quitar jaba ${c.recepciones?.numero_registro ?? c.id}`}>Quitar</Button>}
           </span> },
         ]} />
         {quitar && <Notice tipo="warn">

@@ -26,7 +26,7 @@ export function StockTable({ filas, onMinimo, onVerLotes, compacta, maxAltura }:
     { key: 'cob', titulo: 'Cobertura', n: true, render: (p) => p.dias_cobertura != null ? `${p.dias_cobertura} d` : '—' },
     compacta && { key: 'dias', titulo: 'Días en cámara', n: true, render: (p) => p.dias_lote_mas_antiguo ?? '—' },
     { key: 'sem', titulo: '', render: (p) => <Badge tono={tonoSemaforo(p.semaforo)}>{p.semaforo}</Badge> },
-    onVerLotes && { key: 'ver', titulo: '', render: (p) => <Button tamano="chico" onClick={() => onVerLotes(p)} disabled={p.lotes === 0} aria-label={`Ver lotes de ${p.producto}`}>Ver lotes</Button> },
+    onVerLotes && { key: 'ver', titulo: '', render: (p) => <Button tamano="chico" variante="secundario" onClick={() => onVerLotes(p)} disabled={p.lotes === 0} aria-label={`Ver lotes de ${p.producto}`}>Ver lotes</Button> },
   ] as (Columna<StockSemaforo> | false | undefined)[]).filter((c): c is Columna<StockSemaforo> => Boolean(c))
   return <DataTable columnas={columnas} filas={datos} filaKey={(p) => p.producto_id} maxAltura={maxAltura} vacio="Aún no hay lotes." />
 }
