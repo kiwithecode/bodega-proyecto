@@ -26,14 +26,15 @@ Usuario: Supabase → Authentication → Users → Add user (Auto Confirm).
 ## Estructura
 ```
 src/
-  lib/          supabase.ts (cliente + ok(): todo error de la base se registra en logs_app), format.ts, cuadre.ts (balance puro), types.ts
+  lib/          supabase.ts (cliente + ok(): todo error de la base se registra en logs_app), format.ts, cuadre.ts (balance puro), series.ts (series de gráficas), types.ts
   services/     acceso a datos, una función por operación; las páginas NUNCA importan supabase directo
   hooks/        useAuth, useAsync, useDebounce
   components/
     atoms/      Button, Input, Select, Checkbox, Badge, Notice, Mono/Ayuda/Sub
     molecules/  Field, Combo, Kpi, Tabs, Chips, AlertItem, CuadreBar, SimilarList
     organisms/  DataTable, Sidebar, Panel, KpiGrid, AlertList, StockTable, RecepcionLineas, ProcesoEntradas,
-                ProcesoSalidas, ProductoForm, ProveedorForm, LoteDetalle, ErrorBoundary
+                ProcesoSalidas, ProductoForm, ProveedorForm, LoteDetalle, ErrorBoundary,
+                Grafica (Figura, GraficaLineas, GraficaBarras, TablaSeries: SVG/HTML sin librerías)
     templates/  AppTemplate, PageTemplate, AuthTemplate
   pages/        una por ruta; componen organismos y llaman servicios
   styles/       tokens.css y base.css. Lo demás es CSS Module junto a su componente
@@ -41,7 +42,7 @@ tests/e2e/      Playwright
 ```
 
 ## Pantallas
-Tablero · Recibir · Procesar · **Stock** (por producto y por lote; desde cualquier lote se corrige fecha, kilos y precio, se quita una jaba digitada de más, o se anula la recepción completa; los lotes que salieron de un proceso se corrigen en el proceso) · Lotes · Costos · Catálogos · **Actividad** (cambios en los datos con quién/cuándo/qué, y errores de la aplicación: JS, render, promesas rechazadas y respuestas de error de Supabase se registran solos).
+**Tablero** (KPIs del período, alertas, stock y cinco gráficas: kilos por día, rendimiento y merma, compras por proveedor, costo real semanal y rendimiento por proveedor del producto elegido) · Recibir · Procesar · **Stock** (por producto y por lote; desde cualquier lote se corrige fecha, kilos y precio, se quita una jaba digitada de más, o se anula la recepción completa; los lotes que salieron de un proceso se corrigen en el proceso) · Lotes · Costos · Catálogos · **Actividad** (cambios en los datos con quién/cuándo/qué, y errores de la aplicación: JS, render, promesas rechazadas y respuestas de error de Supabase se registran solos).
 
 ## Reglas para que siga escalando
 - Un componente = `X.tsx` + `X.module.css`. Sin CSS global nuevo; solo tokens.

@@ -60,6 +60,10 @@ src/pages/      una por ruta; componen organismos y llaman servicios
 - **Toda tabla usa `DataTable`** con `columnas: Columna<T>[]`. No escribir `<table>` a mano.
 - Toda llamada a Supabase pasa por `ok()`; las páginas hacen `try/catch` y muestran `<Notice tipo="error">`.
 - Lógica calculable (cuadre, validaciones) va en `lib/` como función pura **con test**.
+- **Gráficas**: sin librerías. `organisms/Grafica.tsx` (Figura + GraficaLineas SVG + GraficaBarras HTML + TablaSeries) y helpers puros en `lib/series.ts`.
+  Reglas: un solo eje Y por gráfica (nunca dos escalas), colores por serie en orden fijo `--serie-1` azul, `--serie-2` naranja (paleta validada CVD/contraste),
+  leyenda solo con ≥ 2 series, tooltip con todas las series en ese X, botón "Tabla" en toda figura, barras nominales de un solo color, eje desde 0 salvo tendencias de precio (`eje="auto"`).
+  Datos: vistas ya existentes (`v_metricas_diarias`, `v_precios_compra`, `v_costo_semanal`, `v_rendimiento_proveedor`); no se agregó SQL para el tablero.
 - Nombres en español, la misma voz que la interfaz (`guardarProceso`, `listLotesDisponibles`).
 - Para añadir pantalla: servicio → organismos que falten → página → una línea en `RUTAS` de `App.tsx`. El menú sale de ese array.
 - Nada de CSS global nuevo: solo `styles/tokens.css` y CSS Modules. Sin Tailwind.
