@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { StockTable } from '../StockTable'
 import type { StockSemaforo } from '../../../lib/types'
 
@@ -7,7 +8,7 @@ const base: StockSemaforo = { producto_id: 1, codigo: 'AR', producto: 'Pulpa res
 const filas: StockSemaforo[] = [
   { ...base, producto_id: 3, codigo: 'DR', producto: 'Lomo fino', semaforo: 'OK' },
   base,
-  { ...base, producto_id: 2, codigo: 'CR', producto: 'Lomo falda', kg_disponible: 0, semaforo: 'SIN STOCK' },
+  { ...base, producto_id: 2, codigo: 'CR', producto: 'Lomo falda', kg_disponible: 0, lotes: 0, semaforo: 'SIN STOCK' },
 ]
 describe('StockTable', () => {
   it('ordena SIN STOCK → BAJO → OK', () => {
@@ -21,5 +22,14 @@ describe('StockTable', () => {
     expect(screen.queryByLabelText('Mínimo Pulpa res')).toBeNull()
     rerender(<StockTable filas={[base]} onMinimo={() => undefined} />)
     expect(screen.getByLabelText('Mínimo Pulpa res')).toHaveValue(50)
+  })
+  it('botón "Ver lotes" solo con onVerLotes, y avisa qué producto se eligió', async () => {
+    const u = userEvent.setup(); const cb = vi.fn()
+    const { rerender } = render(<StockTable filas={filas} />)
+    expect(screen.queryByRole('button', { name: /Ver lotes de/ })).toBeNull()
+    rerender(<StockTable filas={filas} onVerLotes={cb} />)
+    await u.click(screen.getByRole('button', { name: 'Ver lotes de Pulpa res' }))
+    expect(cb).toHaveBeenCalledWith(base)
+    expect(screen.getByRole('button', { name: 'Ver lotes de Lomo falda' })).toBeDisabled() // sin stock → sin lotes que abrir
   })
 })

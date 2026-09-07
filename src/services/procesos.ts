@@ -1,6 +1,6 @@
 import { supabase, ok } from '../lib/supabase'
 import { num } from '../lib/format'
-import type { EntradaForm, Lote, Proceso, ProcesoEntrada, ProcesoSalida, SalidaForm, StockLote } from '../lib/types'
+import type { EntradaForm, Lote, Obrero, Proceso, ProcesoEntrada, ProcesoSalida, SalidaForm, StockLote } from '../lib/types'
 
 export const listLotesDisponibles = () => supabase.from('v_stock_lotes').select('*').gt('kg_disponible', 0).order('fecha').then((r) => ok<StockLote[]>(r))
 
@@ -16,7 +16,9 @@ export async function getProceso(id: string) {
   return { proceso, entradas, salidas, lotes }
 }
 
-export interface CabeceraProceso { tipo_proceso_id: number | null; fecha: string; observaciones: string | null }
+export interface CabeceraProceso { tipo_proceso_id: number | null; fecha: string; observaciones: string | null; obrero: string | null }
+/** Nombres de quienes ya procesaron, el más reciente primero (fn_obreros, 08_proceso_obrero.sql). */
+export const listObreros = () => supabase.rpc('fn_obreros').then((r) => ok<Obrero[]>(r))
 export interface ResultadoProceso { proceso: Proceso; hijos: ProcesoSalida[] }
 
 /** Guarda (o reemplaza) entradas y salidas y cierra el proceso con fn_procesar. */

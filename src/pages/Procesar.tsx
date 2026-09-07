@@ -7,7 +7,7 @@ import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { calcularBalance, validarProceso } from '../lib/cuadre'
 import { fmt, hoy } from '../lib/format'
-import type { EntradaForm, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
+import type { EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
 import { listProductos, listTiposProceso } from '../services/catalogos'
 import * as srv from '../services/procesos'
 
@@ -19,8 +19,9 @@ export default function Procesar() {
   const tipos = useAsync<TipoProceso[]>(listTiposProceso, [], [])
   const productos = useAsync<Producto[]>(() => listProductos(), [], [])
   const lotesQ = useAsync<StockLote[]>(srv.listLotesDisponibles, [], [])
+  const obreros = useAsync<Obrero[]>(srv.listObreros, [], [])
   const [extraLotes, setExtraLotes] = useState<StockLote[]>([])
-  const [cab, setCab] = useState<srv.CabeceraProceso>({ tipo_proceso_id: null, fecha: hoy(), observaciones: '' })
+  const [cab, setCab] = useState<srv.CabeceraProceso>({ tipo_proceso_id: null, fecha: hoy(), observaciones: '', obrero: '' })
   const [entradas, setEntradas] = useState<EntradaForm[]>([entradaVacia()])
   const [salidas, setSalidas] = useState<SalidaForm[]>(salidasIniciales())
   const [error, setError] = useState(''); const [guardando, setGuardando] = useState(false)
@@ -32,7 +33,7 @@ export default function Procesar() {
   useEffect(() => {
     if (!procesoId) return
     srv.getProceso(procesoId).then(({ proceso, entradas: en, salidas: sa, lotes }) => {
-      setCab({ tipo_proceso_id: proceso.tipo_proceso_id, fecha: proceso.fecha, observaciones: proceso.observaciones ?? '' })
+      setCab({ tipo_proceso_id: proceso.tipo_proceso_id, fecha: proceso.fecha, observaciones: proceso.observaciones ?? '', obrero: proceso.obrero ?? '' })
       if (en.length) setEntradas(en.map((e) => ({ lote_id: e.lote_id, kg_tomados: e.kg_tomados, kg_devueltos: e.kg_devueltos })))
       if (sa.length) setSalidas(sa.map((s) => ({ producto_id: s.producto_id, rol: s.rol, kg: s.kg, precio_credito: s.precio_credito ?? '', conserva_proveedor: s.conserva_proveedor })))
       setExtraLotes(lotes.map((l) => ({
@@ -54,11 +55,11 @@ export default function Procesar() {
     setGuardando(true)
     try {
       const r = await srv.guardarProceso({
-        id: procesoId, cabecera: { ...cab, observaciones: cab.observaciones || null },
+        id: procesoId, cabecera: { ...cab, observaciones: cab.observaciones || null, obrero: cab.obrero?.trim() || null },
         entradas: entradas.filter((e) => e.lote_id && Number(e.kg_tomados) > 0),
         salidas: salidas.filter((s) => s.producto_id && Number(s.kg) > 0),
       })
-      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); void lotesQ.recargar()
+      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); void lotesQ.recargar(); void obreros.recargar()
       if (procesoId) window.history.replaceState(null, '', '/procesar')
     } catch (e) { setError((e as Error).message) }
     setGuardando(false)
@@ -75,6 +76,10 @@ export default function Procesar() {
         <Grid form>
           <Field label="Tipo de proceso"><Select value={cab.tipo_proceso_id ?? ''} onChange={(e) => up('tipo_proceso_id', Number(e.target.value))} opciones={tipos.data.map((t) => ({ value: t.id, label: t.nombre }))} aria-label="Tipo de proceso" /></Field>
           <Field label="Fecha"><Input tipo="date" value={cab.fecha} onChange={(e) => up('fecha', e.target.value)} /></Field>
+          <Field label="Quién procesó">
+            <Input value={cab.obrero ?? ''} onChange={(e) => up('obrero', e.target.value)} list="obreros" placeholder="Nombre del obrero" autoComplete="off" aria-label="Quién procesó" />
+            <datalist id="obreros">{obreros.data.map((o) => <option key={o.obrero} value={o.obrero} />)}</datalist>
+          </Field>
           <Field label="Observaciones" style={{ gridColumn: 'span 2' }}><Input value={cab.observaciones ?? ''} onChange={(e) => up('observaciones', e.target.value)} /></Field>
         </Grid>
       </Panel>

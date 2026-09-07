@@ -26,7 +26,7 @@ export interface RecepcionDetalle {
   recepciones?: { fecha: string; numero_registro: string | null; numero_factura: string | null } | null
 }
 export interface Proceso {
-  id: string; tipo_proceso_id: number; fecha: string; observaciones: string | null
+  id: string; tipo_proceso_id: number; fecha: string; observaciones: string | null; obrero: string | null
   kg_consumidos: number; kg_salidas: number; kg_merma_no_reg: number
   costo_entrada: number; credito_subproductos: number; costo_neto: number; procesado_at: string | null
 }
@@ -63,9 +63,10 @@ export interface RendimientoProveedor {
   kg_entrada: number; kg_principal: number; rendimiento_pct: number; merma_pct: number; costo_compra_kg: number; costo_real_kg: number
 }
 export interface PrecioCompra { fecha: string; proveedor_codigo: number; proveedor: string; producto_codigo: string; producto: string; kg: number; precio_kg: number; total: number; lote: string }
+export interface Obrero { obrero: string; procesos: number; ultimo: string }
 export interface Trazabilidad {
   lote_hijo: string; rol: Rol; kg_salida: number; costo_kg: number; proceso_id: string; proceso: string; fecha_proceso: string
-  lote_padre: string; kg_tomados: number; kg_devueltos: number; costo_kg_aplicado: number
+  lote_padre: string; kg_tomados: number; kg_devueltos: number; costo_kg_aplicado: number; obrero?: string | null
 }
 export interface Similar { id: number; codigo: string | number; nombre: string; especie?: string; misma_especie?: boolean; similitud: number; veredicto: Veredicto }
 export interface CodigoSugerido { codigo: string; regla: string; prioridad: number }
