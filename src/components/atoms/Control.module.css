@@ -1,0 +1,6 @@
+.control { width: 100%; height: var(--control-h); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.control:disabled { background: var(--surface-2); color: var(--ink-3); }
+.numero { text-align: right; font-size: 17px; }
+.chico { height: var(--control-h-sm); }
+.mono { font-family: var(--mono); font-weight: 600; }
+.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }

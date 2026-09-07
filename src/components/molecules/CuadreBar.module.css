@@ -1,0 +1,8 @@
+.cuadre { margin: 14px 0 6px; }
+.pista { height: 28px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); display: flex; overflow: hidden; }
+.seg { height: 100%; transition: width .25s ease; }
+.principal { background: var(--verde); } .subproducto { background: var(--azul); } .merma { background: var(--ink-3); } .exceso { background: var(--rojo); }
+.leyenda { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin-top: 8px; font-size: 13.5px; color: var(--ink-2); }
+.leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.estado { margin-left: auto; font-size: 20px; font-weight: 600; color: var(--ink); }
+.mal { color: var(--rojo); }

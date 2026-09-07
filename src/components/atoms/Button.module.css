@@ -1,0 +1,8 @@
+.btn { height: var(--control-h); padding: 0 18px; border-radius: var(--radius); border: 1px solid var(--line); background: #fff; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn:disabled { opacity: .5; cursor: default; }
+.primario { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+.primario:hover { background: var(--rojo-2); }
+.texto { border-color: transparent; background: transparent; text-decoration: underline; padding: 0; height: auto; }
+.chico { height: 32px; padding: 0 10px; font-size: 13.5px; }
+.bloque { width: 100%; }

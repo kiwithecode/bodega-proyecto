@@ -1,0 +1,6 @@
+.aviso { padding: 10px 12px; border-radius: var(--radius); border: 1px solid; margin: 10px 0; }
+.aviso ul { margin: 6px 0 0; }
+.error { background: var(--rojo-suave); border-color: #e7b4bc; color: var(--rojo-2); }
+.ok { background: var(--verde-suave); border-color: #b5dcc4; color: var(--verde); }
+.info { background: var(--azul-suave); border-color: #b9cde5; color: var(--azul); }
+.warn { background: var(--ambar-suave); border-color: #ebd39a; color: var(--ambar); }

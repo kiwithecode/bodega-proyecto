@@ -1,0 +1,11 @@
+:root {
+  --bg: #e9ecef;  --surface: #ffffff;  --surface-2: #f4f6f8;  --line: #cfd5db;
+  --ink: #17212b;  --ink-2: #4a5866;  --ink-3: #7d8a97;
+  --rojo: #9b1c2e;  --rojo-2: #7a1424;  --rojo-suave: #fbe9ec;
+  --ambar: #a86b0a;  --ambar-suave: #fff3d6;
+  --verde: #2e7d4f;  --verde-suave: #e3f3ea;
+  --azul: #245a8f;  --azul-suave: #e6eef7;
+  --radius: 4px;  --nav-w: 200px;  --control-h: 42px;  --control-h-sm: 36px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+}

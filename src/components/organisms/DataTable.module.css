@@ -1,0 +1,10 @@
+.scroll { overflow: auto; max-height: 70vh; }
+.tabla { font-size: 14.5px; }
+.tabla th, .tabla td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.tabla th { font-weight: 600; color: var(--ink-2); font-size: 13px; background: var(--surface-2); position: sticky; top: 0; z-index: 1; }
+.n { text-align: right !important; }
+.click { cursor: pointer; }
+.sel { background: var(--azul-suave); }
+.total td { font-weight: 600; border-top: 2px solid var(--ink-2); }
+.vacio { color: var(--ink-3); padding: 20px; text-align: center; }
+.apagado { opacity: .5; }

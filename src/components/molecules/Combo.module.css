@@ -1,0 +1,6 @@
+.combo { position: relative; }
+.lista { position: absolute; z-index: 20; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px 0; list-style: none; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 6px 18px rgba(23,33,43,.12); max-height: 280px; overflow: auto; }
+.item { padding: 8px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+.item:hover, .sel { background: var(--azul-suave); }
+.extra { color: var(--ink-3); font-size: 13px; }
+.vacio { padding: 8px 10px; color: var(--ink-3); }

@@ -1,0 +1,16 @@
+.nav { background: var(--ink); color: #dfe6ec; padding: 18px 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.marca { padding: 0 18px 18px; border-bottom: 1px solid #2c3a48; }
+.marca b { display: block; font-size: 16px; color: #fff; }
+.marca span { font-size: 12.5px; color: #9fb0c0; }
+.link { display: flex; align-items: center; gap: 10px; padding: 11px 18px; text-decoration: none; color: #c5d0da; border-left: 3px solid transparent; }
+.link:hover { background: #22303e; color: #fff; }
+.activo { background: #22303e; color: #fff; border-left-color: var(--rojo); }
+.badge { margin-left: auto; background: var(--rojo); color: #fff; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 10px; }
+.pie { margin-top: auto; padding: 14px 18px; font-size: 12.5px; color: #9fb0c0; border-top: 1px solid #2c3a48; }
+.pie button { background: none; border: 0; color: #c5d0da; padding: 0; cursor: pointer; text-decoration: underline; }
+@media (max-width: 900px) {
+  .nav { position: static; height: auto; flex-direction: row; flex-wrap: wrap; padding: 8px; }
+  .marca, .pie { display: none; }
+  .link { padding: 8px 12px; border-left: 0; border-bottom: 3px solid transparent; }
+  .activo { border-left: 0; border-bottom-color: var(--rojo); }
+}

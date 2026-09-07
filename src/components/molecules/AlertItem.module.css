@@ -1,0 +1,5 @@
+.alerta { display: grid; grid-template-columns: 8px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.alerta + .alerta { margin-top: 8px; }
+.barra { width: 8px; height: 100%; min-height: 34px; border-radius: 2px; }
+.n1 { background: var(--rojo); } .n2 { background: var(--ambar); } .n3 { background: var(--azul); } .n4 { background: var(--ink-3); }
+.tipo { font-size: 12.5px; color: var(--ink-2); }
