@@ -1,9 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { diasEntre, rellenarDias, pasoBonito, marcasEje, marcasEjeRango, topN, sumarPor, diaCorto } from '../series'
+import { diasEntre, rellenarDias, pasoBonito, marcasEje, marcasEjeRango, topN, sumarPor, diaCorto, maximo, minimo, fechaValida, MAX_DIAS_SERIE } from '../series'
 
 describe('diasEntre / rellenarDias', () => {
   it('incluye ambos extremos y cruza el mes', () => {
     expect(diasEntre('2026-04-29', '2026-05-02')).toEqual(['2026-04-29', '2026-04-30', '2026-05-01', '2026-05-02'])
+  })
+  it('un rango absurdo (año mal digitado) se recorta al tope, no revienta', () => {
+    const dias = diasEntre('0226-09-07', '2026-09-08')
+    expect(dias).toHaveLength(MAX_DIAS_SERIE); expect(dias[dias.length - 1]).toBe('2026-09-08')
+  })
+  it('maximo/minimo aguantan arreglos enormes y vacíos', () => {
+    const grande = Array.from({ length: 500000 }, (_, i) => i % 1000)
+    expect(maximo(grande)).toBe(999); expect(minimo(grande)).toBe(0)
+    expect(maximo([])).toBe(0); expect(minimo([], 7)).toBe(7); expect(maximo([-5, -2], -Infinity)).toBe(-2)
+  })
+  it('fechaValida acota a la operación real', () => {
+    expect(fechaValida('2026-09-08')).toBe(true); expect(fechaValida('0226-09-08')).toBe(false)
+    expect(fechaValida('2019-12-31')).toBe(false); expect(fechaValida('2999-01-01')).toBe(false); expect(fechaValida('')).toBe(false)
   })
   it('rango invertido o inválido → vacío', () => {
     expect(diasEntre('2026-05-02', '2026-05-01')).toEqual([])

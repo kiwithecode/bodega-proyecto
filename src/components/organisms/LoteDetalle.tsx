@@ -86,7 +86,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
         <h3 style={{ margin: '14px 0 6px' }}>Lote (editable)</h3>
         <Grid form>
           <Field label="Fecha de ingreso" ayuda={nuevoCodigo !== lote.codigo && <>El código pasará a <Mono><b>{nuevoCodigo}</b></Mono>.</>}>
-            <Input tipo="date" chico value={cab.fecha} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setCab({ ...cab, fecha: e.target.value })} aria-label="Fecha del lote" /></Field>
+            <Input tipo="date" chico value={cab.fecha} min="2020-01-01" max={new Date().toISOString().slice(0, 10)} onChange={(e) => setCab({ ...cab, fecha: e.target.value })} aria-label="Fecha del lote" /></Field>
           <Field label="Observaciones" style={{ gridColumn: 'span 2' }}>
             <Input chico value={cab.observaciones} onChange={(e) => setCab({ ...cab, observaciones: e.target.value })} aria-label="Observaciones del lote" /></Field>
           <Field style={{ alignSelf: 'end' }}><Button tamano="chico" variante="primario" onClick={guardarLote} disabled={cabSinCambios || ocupado || cab.fecha.length !== 10}>Guardar lote</Button></Field>

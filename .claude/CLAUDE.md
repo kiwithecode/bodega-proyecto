@@ -23,6 +23,7 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
 | `07_tests_correcciones_pgtap.sql` | 40 pruebas de correcciones y sobrante; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `12_fechas_validas.sql` | CHECK `fecha between '2020-01-01' and current_date+1` (NOT VALID) en recepciones/procesos/lotes + consulta de filas a corregir. |
 | `11_stock_alto.sql` | `v_stock_semaforo` con estado `ALTO` (kg > `stock_minimos.kg_ideal`); `kg_minimo` pasa a nullable. |
 | `10_sobrante.sql` | Salidas > entrada: `fn_kpis` y vistas usan `greatest(kg_merma_no_reg,0)` + `kg_sobrante`; alerta `SOBRANTE` (nivel 3). |
 | `09_pendientes_cerrados.sql` | HUP confirmado (`por_confirmar = false`) y `cron.schedule('limpiar-logs')` semanal (domingo 03:00 Quito) para `fn_limpiar_logs()`. |
@@ -96,6 +97,7 @@ No hay Postgres local ni Docker en la máquina de Kevin: las pruebas pgTAP se co
 - RLS: un solo rol (`authenticated`) con acceso total; `auditoria` y `logs_app` solo lectura desde la app.
 - Alertas se calculan al abrir la pantalla (vista), no se guardan. Notificaciones push/WhatsApp quedan para más adelante.
 - Los servicios devuelven `PromiseLike` (builder de Supabase): para `.catch` en páginas, envolver con `Promise.resolve(...)`.
+- **Nunca `Math.max(...arr)` / spread sobre arreglos de datos**: usar `maximo`/`minimo` de `lib/series.ts`. Una fecha con año mal digitado (0226) generó una serie de 650 000 días y "Maximum call stack size exceeded" en el Tablero (08/09/2026). `diasEntre` está topado a `MAX_DIAS_SERIE`; las fechas de formularios se validan con `fechaValida`.
 
 ## Pendientes conocidos
 - Proveedores 17 y 48 son ambos "JUAN SANCHEZ": ¿misma persona?

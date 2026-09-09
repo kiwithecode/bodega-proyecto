@@ -7,6 +7,7 @@ import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { calcularBalance, validarProceso } from '../lib/cuadre'
 import { fmt, hoy } from '../lib/format'
+import { fechaValida } from '../lib/series'
 import type { EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
 import { listProductos, listTiposProceso } from '../services/catalogos'
 import * as srv from '../services/procesos'
@@ -51,6 +52,7 @@ export default function Procesar() {
   const guardar = async () => {
     setError(''); setResultado(null)
     if (!cab.tipo_proceso_id) return setError('Elige el tipo de proceso.')
+    if (!fechaValida(cab.fecha)) return setError('La fecha no es válida: revisa el año (debe estar entre 2020 y hoy).')
     const err = validarProceso(b, entradas, salidas, lotes, !procesoId, aceptaSobra)
     if (err) return setError(err)
     setGuardando(true)
@@ -77,7 +79,7 @@ export default function Procesar() {
       <Panel>
         <Grid form>
           <Field label="Tipo de proceso"><Select value={cab.tipo_proceso_id ?? ''} onChange={(e) => up('tipo_proceso_id', Number(e.target.value))} opciones={tipos.data.map((t) => ({ value: t.id, label: t.nombre }))} aria-label="Tipo de proceso" /></Field>
-          <Field label="Fecha"><Input tipo="date" value={cab.fecha} onChange={(e) => up('fecha', e.target.value)} /></Field>
+          <Field label="Fecha"><Input tipo="date" value={cab.fecha} min="2020-01-01" max={hoy()} onChange={(e) => up('fecha', e.target.value)} /></Field>
           <Field label="Quién procesó">
             <Input value={cab.obrero ?? ''} onChange={(e) => up('obrero', e.target.value)} list="obreros" placeholder="Nombre del obrero" autoComplete="off" aria-label="Quién procesó" />
             <datalist id="obreros">{obreros.data.map((o) => <option key={o.obrero} value={o.obrero} />)}</datalist>

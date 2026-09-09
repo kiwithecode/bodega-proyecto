@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button } from '../atoms'
 import { DataTable, type Columna } from './DataTable'
-import { marcasEje, marcasEjeRango } from '../../lib/series'
+import { marcasEje, marcasEjeRango, maximo, minimo } from '../../lib/series'
 import s from './Grafica.module.css'
 
 /** Una serie de una gráfica de líneas. `null` = sin dato ese día (la línea se corta). */
@@ -46,7 +46,7 @@ export function GraficaLineas({ etiquetas, series, formato, alto = 200, marcador
   const m = { izq: 46, der: 56, arr: 10, aba: 24 }
   const w = ancho, h = alto, pw = w - m.izq - m.der, ph = h - m.arr - m.aba
   const todos = series.flatMap((se) => se.valores.filter((v): v is number => v != null))
-  const max = Math.max(0, ...todos), min = eje === 'auto' && todos.length ? Math.min(...todos) : 0
+  const max = maximo(todos), min = eje === 'auto' ? minimo(todos) : 0
   const marcas = useMemo(() => eje === 'auto' ? marcasEjeRango(min, max) : marcasEje(max), [eje, min, max])
   const yMin = marcas[0], yMax = marcas[marcas.length - 1] || 1
   const x = (i: number) => m.izq + (n <= 1 ? pw / 2 : (i * pw) / (n - 1))
@@ -103,7 +103,7 @@ export function TablaSeries({ etiquetas, series, formato, tituloX = 'Fecha' }: {
 
 /** Barras horizontales para comparar magnitudes entre pocas categorías (una sola serie → un solo color). */
 export function GraficaBarras({ filas, formato, color = 'var(--serie-1)', detalle }: { filas: { etiqueta: string; valor: number; detalle?: string }[]; formato: Fmt; color?: string; detalle?: boolean }) {
-  const max = Math.max(0, ...filas.map((f) => f.valor))
+  const max = maximo(filas.map((f) => f.valor))
   if (filas.length === 0) return <div className={s.vacio}>Sin datos en el período.</div>
   return (
     <div className={s.barras} role="list">

@@ -1,6 +1,7 @@
 import { Badge, Button, Input, Mono, tonoSemaforo } from '../atoms'
 import { DataTable, type Columna } from './DataTable'
 import { fmt } from '../../lib/format'
+import { maximo } from '../../lib/series'
 import type { Semaforo, StockSemaforo } from '../../lib/types'
 import s from './StockTable.module.css'
 
@@ -36,7 +37,7 @@ const nivelInput = (p: StockSemaforo, campo: NivelStock, etiqueta: string, onNiv
 
 export function StockTable({ filas, onNivel, onVerLotes, compacta, maxAltura }: StockTableProps) {
   const datos = [...filas].sort((a, b) => orden[a.semaforo] - orden[b.semaforo] || a.producto.localeCompare(b.producto))
-  const referencia = Math.max(0, ...filas.map((p) => Number(p.kg_disponible)))
+  const referencia = maximo(filas.map((p) => Number(p.kg_disponible)))
   const columnas = ([
     { key: 'producto', titulo: 'Producto', render: (p) => <>{p.producto} <Mono style={{ color: 'var(--ink-3)' }}>{p.codigo}</Mono></> },
     !compacta && { key: 'especie', titulo: 'Especie' },

@@ -5,6 +5,7 @@ import { Grid, Panel, PanelPie, RecepcionLineas, lineaVacia } from '../component
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { fmt, hoy, num } from '../lib/format'
+import { fechaValida } from '../lib/series'
 import type { LineaRecepcion, Producto, Proveedor } from '../lib/types'
 import { listProductos, listProveedores } from '../services/catalogos'
 import { crearRecepcion, type CabeceraRecepcion, type LoteCreado } from '../services/recepciones'
@@ -22,7 +23,7 @@ export default function Recibir() {
 
   const guardar = async () => {
     setError(''); setOk(null)
-    if (!cab.fecha) return setError('Falta la fecha.')
+    if (!fechaValida(cab.fecha)) return setError('La fecha no es válida: revisa el año (debe estar entre 2020 y hoy).')
     if (!cab.proveedor_id) return setError('Elige el proveedor.')
     if (validas.length === 0) return setError('Agrega al menos un producto con peso.')
     if (validas.some((l) => l.precio_kg === '')) return setError('Falta el precio en alguna fila.')
@@ -42,7 +43,7 @@ export default function Recibir() {
         <ul>{ok.lotes.map((l) => <li key={l.codigo}><Mono><b>{l.codigo}</b></Mono> {l.productos?.nombre} · {fmt.kg(l.kg_inicial)} kg · {fmt.usd4(l.costo_kg)}/kg</li>)}</ul></Notice>}
       <Panel>
         <Grid form>
-          <Field label="Fecha"><Input tipo="date" value={cab.fecha} onChange={(e) => up('fecha', e.target.value)} aria-label="Fecha" /></Field>
+          <Field label="Fecha"><Input tipo="date" value={cab.fecha} min="2020-01-01" max={hoy()} onChange={(e) => up('fecha', e.target.value)} aria-label="Fecha" /></Field>
           <Field label="Proveedor" style={{ gridColumn: 'span 2' }} ayuda={prov?.acuerdo_limpieza && `Acuerdo: ${prov.acuerdo_limpieza}`}>
             <Combo opciones={proveedores.data} value={cab.proveedor_id} onChange={(v) => up('proveedor_id', v)} clave={(p) => p.id} mostrar={(p) => p.nombre} extra={(p) => String(p.codigo)} autoFocus aria-label="Proveedor" /></Field>
           <Field label="N° registro compra"><Input value={cab.registro} onChange={(e) => up('registro', e.target.value)} /></Field>

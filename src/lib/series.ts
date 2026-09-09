@@ -1,14 +1,24 @@
 /** Utilidades puras para armar series de gráficas (con test en __tests__/series.test.ts). */
 
+/** Máximo/mínimo sin `Math.max(...arr)`: el spread revienta la pila con arreglos grandes. */
+export const maximo = (xs: number[], base = 0) => xs.reduce((a, x) => (x > a ? x : a), base)
+export const minimo = (xs: number[], base = 0) => xs.length ? xs.reduce((a, x) => (x < a ? x : a), xs[0]) : base
+
+/** Tope de días que una serie diaria puede tener; más allá, una fecha mal digitada (año 0226) dejaría la pantalla colgada. */
+export const MAX_DIAS_SERIE = 800
+/** Fecha válida para la operación: ni antes de 2020 ni después de mañana. */
+export const fechaValida = (f: string | null | undefined) => !!f && /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= '2020-01-01' && f <= new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+
 const aISO = (d: Date) => d.toISOString().slice(0, 10)
 const deISO = (s: string) => new Date(s + 'T00:00:00Z')
 
-/** Todos los días entre dos fechas ISO, ambas incluidas. Si están invertidas, devuelve []. */
+/** Todos los días entre dos fechas ISO, ambas incluidas (máximo MAX_DIAS_SERIE, contando desde `hasta` hacia atrás). Si están invertidas, devuelve []. */
 export function diasEntre(desde: string, hasta: string): string[] {
   const out: string[] = []
   const d = deISO(desde), h = deISO(hasta)
-  if (isNaN(d.getTime()) || isNaN(h.getTime())) return out
-  for (let t = d; t <= h; t.setUTCDate(t.getUTCDate() + 1)) out.push(aISO(t))
+  if (isNaN(d.getTime()) || isNaN(h.getTime()) || d > h) return out
+  const inicio = new Date(h); inicio.setUTCDate(inicio.getUTCDate() - (MAX_DIAS_SERIE - 1))
+  for (let t = d > inicio ? d : inicio; t <= h; t.setUTCDate(t.getUTCDate() + 1)) out.push(aISO(t))
   return out
 }
 

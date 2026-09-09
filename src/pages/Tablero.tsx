@@ -6,7 +6,7 @@ import { AlertList, Figura, GraficaBarras, GraficaLineas, Grid, KpiGrid, Panel, 
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { fmt, hoy, diasAtras } from '../lib/format'
-import { diaCorto, rellenarDias, sumarPor, topN } from '../lib/series'
+import { MAX_DIAS_SERIE, diaCorto, diasEntre, rellenarDias, sumarPor, topN } from '../lib/series'
 import type { Alerta, CostoSemanal, Kpis, MetricaDiaria, PrecioCompra, RendimientoProveedor, StockSemaforo } from '../lib/types'
 import * as tab from '../services/tablero'
 import { getSemaforo } from '../services/stock'
@@ -52,6 +52,7 @@ export default function Tablero() {
   // Series diarias (todos los días del período, aunque no haya movimiento).
   const dias = useMemo(() => rellenarDias(desde, hasta, diario.data, vacioDia), [desde, hasta, diario.data])
   const etiquetasDia = dias.map((d) => diaCorto(d.fecha))
+  const recortado = dias.length === MAX_DIAS_SERIE && diasEntre(desde, dias[0].fecha).length > 1
   const kgSeries: Serie[] = [
     { nombre: 'Recibido', color: AZUL, valores: dias.map((d) => Number(d.kg_recibidos)) },
     { nombre: 'Procesado', color: NARANJA, valores: dias.map((d) => Number(d.kg_procesados)) },
@@ -99,7 +100,7 @@ export default function Tablero() {
       </Grid>
 
       <Grid dos style={{ marginTop: 18, opacity: diario.cargando ? .6 : 1 }}>
-        <Figura titulo="Kilos por día" sub="recibido de proveedores vs. entrado a proceso" tabla={<TablaSeries etiquetas={etiquetasDia} series={kgSeries} formato={fmt.kg} />}>
+        <Figura titulo="Kilos por día" sub={recortado ? `recibido vs. procesado · solo los últimos ${MAX_DIAS_SERIE} días del período` : 'recibido de proveedores vs. entrado a proceso'} tabla={<TablaSeries etiquetas={etiquetasDia} series={kgSeries} formato={fmt.kg} />}>
           <GraficaLineas etiquetas={etiquetasDia} series={kgSeries} formato={(v) => fmt.kg(v)} />
         </Figura>
         <Figura titulo="Rendimiento y merma por día" sub="% sobre los kg procesados; sin línea los días sin proceso" tabla={<TablaSeries etiquetas={etiquetasDia} series={pctSeries} formato={fmt.pct} />}>
