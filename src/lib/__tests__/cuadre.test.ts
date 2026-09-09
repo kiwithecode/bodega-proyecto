@@ -6,12 +6,12 @@ import type { EntradaForm, SalidaForm } from '../types'
 const lotes: LoteRef[] = [{ id: 'L1', costo_kg: 6.6, kg_disponible: 116.5, proveedor_codigo: 131 }]
 const entradas: EntradaForm[] = [{ lote_id: 'L1', kg_tomados: '116.5', kg_devueltos: '' }]
 const salidas: SalidaForm[] = [
-  { producto_id: 1, rol: 'subproducto', kg: '8.9', precio_credito: '3.3', conserva_proveedor: true },
-  { producto_id: 2, rol: 'subproducto', kg: '3.85', precio_credito: '4.5', conserva_proveedor: true },
-  { producto_id: 3, rol: 'merma', kg: '5.15', precio_credito: '', conserva_proveedor: true },
-  { producto_id: 4, rol: 'merma', kg: '0.2', precio_credito: '', conserva_proveedor: true },
-  { producto_id: 5, rol: 'principal', kg: '89.2', precio_credito: '', conserva_proveedor: true },
-  { producto_id: 6, rol: 'principal', kg: '9.2', precio_credito: '', conserva_proveedor: true },
+  { producto_id: 1, rol: 'subproducto', kg: '8.9', precio_credito: '3.3', conserva_proveedor: true, destino: 'stock', cliente: '' },
+  { producto_id: 2, rol: 'subproducto', kg: '3.85', precio_credito: '4.5', conserva_proveedor: true, destino: 'stock', cliente: '' },
+  { producto_id: 3, rol: 'merma', kg: '5.15', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' },
+  { producto_id: 4, rol: 'merma', kg: '0.2', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' },
+  { producto_id: 5, rol: 'principal', kg: '89.2', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' },
+  { producto_id: 6, rol: 'principal', kg: '9.2', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' },
 ]
 
 describe('calcularBalance', () => {
@@ -28,7 +28,7 @@ describe('calcularBalance', () => {
     expect(b2.consumo).toBe(28); expect(b2.costoEntrada).toBeCloseTo(184.8, 4)
   })
   it('detecta exceso', () => {
-    const b3 = calcularBalance(entradas, [{ producto_id: 5, rol: 'principal', kg: '120', precio_credito: '', conserva_proveedor: true }], lotes)
+    const b3 = calcularBalance(entradas, [{ producto_id: 5, rol: 'principal', kg: '120', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' }], lotes)
     expect(b3.sobra).toBe(true); expect(b3.faltan).toBeCloseTo(-3.5, 4)
   })
   it('cuenta proveedores distintos para avisar mezcla', () => {
@@ -49,18 +49,18 @@ describe('validarProceso', () => {
     expect(validarProceso(calcularBalance(entradas, [], lotes), entradas, [], lotes, true)).toMatch(/una salida/)
   })
   it('subproducto sin precio de crédito', () => {
-    const s: SalidaForm[] = [{ producto_id: 1, rol: 'subproducto', kg: '5', precio_credito: '', conserva_proveedor: true }]
+    const s: SalidaForm[] = [{ producto_id: 1, rol: 'subproducto', kg: '5', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' }]
     expect(validarProceso(calcularBalance(entradas, s, lotes), entradas, s, lotes, true)).toMatch(/precio de crédito/)
   })
   it('con sobrante bloquea, salvo que la persona lo acepte explícitamente', () => {
-    const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '120', precio_credito: '', conserva_proveedor: true }]
+    const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '120', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' }]
     const b = calcularBalance(entradas, s, lotes)
     expect(validarProceso(b, entradas, s, lotes, true)).toMatch(/sobran 3,50 kg/)
     expect(validarProceso(b, entradas, s, lotes, true, true)).toBeNull()
   })
   it('rechaza más kilos de los disponibles solo en proceso nuevo', () => {
     const e: EntradaForm[] = [{ lote_id: 'L1', kg_tomados: '200', kg_devueltos: '' }]
-    const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '10', precio_credito: '', conserva_proveedor: true }]
+    const s: SalidaForm[] = [{ producto_id: 5, rol: 'principal', kg: '10', precio_credito: '', conserva_proveedor: true, destino: 'stock', cliente: '' }]
     expect(validarProceso(calcularBalance(e, s, lotes), e, s, lotes, true)).toMatch(/disponibles/)
     expect(validarProceso(calcularBalance(e, s, lotes), e, s, lotes, false)).toBeNull()
   })

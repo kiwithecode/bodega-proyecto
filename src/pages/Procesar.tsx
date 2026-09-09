@@ -8,7 +8,7 @@ import { useAsync } from '../hooks/useAsync'
 import { calcularBalance, validarProceso } from '../lib/cuadre'
 import { fmt, hoy } from '../lib/format'
 import { fechaValida } from '../lib/series'
-import type { EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
+import type { Cliente, EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
 import { listProductos, listTiposProceso } from '../services/catalogos'
 import * as srv from '../services/procesos'
 
@@ -21,6 +21,7 @@ export default function Procesar() {
   const productos = useAsync<Producto[]>(() => listProductos(), [], [])
   const lotesQ = useAsync<StockLote[]>(srv.listLotesDisponibles, [], [])
   const obreros = useAsync<Obrero[]>(srv.listObreros, [], [])
+  const clientes = useAsync<Cliente[]>(srv.listClientes, [], [])
   const [extraLotes, setExtraLotes] = useState<StockLote[]>([])
   const [cab, setCab] = useState<srv.CabeceraProceso>({ tipo_proceso_id: null, fecha: hoy(), observaciones: '', obrero: '' })
   const [entradas, setEntradas] = useState<EntradaForm[]>([entradaVacia()])
@@ -37,7 +38,7 @@ export default function Procesar() {
     srv.getProceso(procesoId).then(({ proceso, entradas: en, salidas: sa, lotes }) => {
       setCab({ tipo_proceso_id: proceso.tipo_proceso_id, fecha: proceso.fecha, observaciones: proceso.observaciones ?? '', obrero: proceso.obrero ?? '' })
       if (en.length) setEntradas(en.map((e) => ({ lote_id: e.lote_id, kg_tomados: e.kg_tomados, kg_devueltos: e.kg_devueltos })))
-      if (sa.length) setSalidas(sa.map((s) => ({ producto_id: s.producto_id, rol: s.rol, kg: s.kg, precio_credito: s.precio_credito ?? '', conserva_proveedor: s.conserva_proveedor })))
+      if (sa.length) setSalidas(sa.map((s) => ({ producto_id: s.producto_id, rol: s.rol, kg: s.kg, precio_credito: s.precio_credito ?? '', conserva_proveedor: s.conserva_proveedor, destino: s.destino ?? 'stock', cliente: s.cliente ?? '' })))
       setExtraLotes(lotes.map((l) => ({
         id: l.id, codigo: l.codigo, fecha: l.fecha, dias_en_camara: 0, especie: null, producto_codigo: l.productos?.codigo ?? '', producto: l.productos?.nombre ?? '',
         rol_defecto: 'principal', proveedor_codigo: l.proveedores?.codigo ?? null, proveedor: l.proveedores?.nombre ?? null, origen: l.origen,
@@ -53,6 +54,7 @@ export default function Procesar() {
     setError(''); setResultado(null)
     if (!cab.tipo_proceso_id) return setError('Elige el tipo de proceso.')
     if (!fechaValida(cab.fecha)) return setError('La fecha no es válida: revisa el año (debe estar entre 2020 y hoy).')
+    if (salidas.some((s) => s.producto_id && Number(s.kg) > 0 && s.rol !== 'merma' && s.destino === 'pedido' && !s.cliente.trim())) return setError('Las salidas para pedido necesitan el nombre del cliente (para quién se elaboró).')
     const err = validarProceso(b, entradas, salidas, lotes, !procesoId, aceptaSobra)
     if (err) return setError(err)
     setGuardando(true)
@@ -62,7 +64,7 @@ export default function Procesar() {
         entradas: entradas.filter((e) => e.lote_id && Number(e.kg_tomados) > 0),
         salidas: salidas.filter((s) => s.producto_id && Number(s.kg) > 0),
       })
-      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); setAceptaSobra(false); void lotesQ.recargar(); void obreros.recargar()
+      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); setAceptaSobra(false); void lotesQ.recargar(); void obreros.recargar(); void clientes.recargar()
       if (procesoId) window.history.replaceState(null, '', '/procesar')
     } catch (e) { setError((e as Error).message) }
     setGuardando(false)
@@ -74,7 +76,7 @@ export default function Procesar() {
       {resultado && <Notice tipo="ok">Proceso cerrado. Entrada {fmt.kg(resultado.proceso.kg_consumidos)} kg ({fmt.usd(resultado.proceso.costo_entrada)}), crédito subproductos {fmt.usd(resultado.proceso.credito_subproductos)}, costo neto {fmt.usd(resultado.proceso.costo_neto)}.
         {Number(resultado.proceso.kg_merma_no_reg) > 0 && <> Quedaron <b>{fmt.kg(resultado.proceso.kg_merma_no_reg)} kg sin justificar</b>.</>}
         {Number(resultado.proceso.kg_merma_no_reg) < -0.0005 && <> Las salidas pesaron <b>{fmt.kg(-Number(resultado.proceso.kg_merma_no_reg))} kg más que la entrada</b>: quedó registrado como sobrante y aparece en Alertas para revisar el pesaje.</>}
-        <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg</li>)}</ul></Notice>}
+        <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg{h.destino === 'pedido' && <> · <b>pedido para {h.cliente ?? 'cliente'}</b></>}</li>)}</ul></Notice>}
       {procesoId && <Notice tipo="warn">Estás cerrando un proceso que quedó pendiente. <Link to="/procesar">Empezar uno nuevo</Link></Notice>}
       <Panel>
         <Grid form>
@@ -95,7 +97,7 @@ export default function Procesar() {
       </Panel>
       <Panel titulo="Sale">
         <CuadreBar consumo={b.consumo} principal={b.kgPrincipal} subproducto={b.kgSubproducto} merma={b.kgMerma} />
-        <ProcesoSalidas salidas={salidas} onChange={setSalidas} productos={productos.data} kgSalidas={b.kgSalidas} costoNeto={b.costoNeto} costoPrincipal={b.costoPrincipal} />
+        <ProcesoSalidas salidas={salidas} onChange={setSalidas} productos={productos.data} kgSalidas={b.kgSalidas} costoNeto={b.costoNeto} costoPrincipal={b.costoPrincipal} clientes={clientes.data.map((c) => c.cliente)} />
         {b.sobra && <Notice tipo="warn">Las salidas pesan <b>{fmt.kg(-b.faltan)} kg más</b> que lo que entró ({fmt.kg(b.consumo)} kg). Eso no puede pasar físicamente: alguien pesó o digitó mal.
           Revisa primero los kg de las salidas. Si lo que pesó mal fue la jaba de entrada, corrígela en <Link to="/stock">Stock → Corregir lote</Link> y vuelve a tomar los kilos.
           Si igual necesitas cerrar ahora, marca la casilla: el sobrante queda registrado y sale en Alertas.

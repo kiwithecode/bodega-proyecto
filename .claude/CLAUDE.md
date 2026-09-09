@@ -21,8 +21,9 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 40 pruebas de correcciones y sobrante; se revierte solo. |
+| `07_tests_correcciones_pgtap.sql` | 46 pruebas de correcciones, sobrante y pedidos; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `13_pedidos.sql` | `proceso_salidas.destino/cliente` y `lotes.destino/cliente`; `fn_obtener_lote(…, p_sufijo)`; `fn_procesar` manda las salidas 'pedido' a un lote con sufijo `-CLIENTE` (`fn_sufijo_pedido`); `v_stock_lotes`/`v_trazabilidad` + destino, cliente; `fn_clientes()`. |
 | `12_fechas_validas.sql` | CHECK `fecha between '2020-01-01' and current_date+1` (NOT VALID) en recepciones/procesos/lotes + consulta de filas a corregir. |
 | `11_stock_alto.sql` | `v_stock_semaforo` con estado `ALTO` (kg > `stock_minimos.kg_ideal`); `kg_minimo` pasa a nullable. |
 | `10_sobrante.sql` | Salidas > entrada: `fn_kpis` y vistas usan `greatest(kg_merma_no_reg,0)` + `kg_sobrante`; alerta `SOBRANTE` (nivel 3). |
@@ -32,6 +33,7 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 - **Todo es un lote.** `lotes` es la tabla central: nace de una recepción o de un proceso, tiene `kg_disponible` y `costo_kg`.
 - **Código de lote = `<codigo_proveedor><codigo_producto><ddmmyy>`**, ej. `131AR040526`. Lo genera `fn_codigo_lote`; nadie lo escribe a mano.
   Mismo producto + mismo proveedor + misma fecha = **mismo lote** (varias jabas suman). Lotes mezclados (molida) no llevan proveedor: `EMC030226`.
+  **Pedidos**: una salida de proceso con `destino='pedido'` va a un lote aparte con sufijo del cliente (`131ARL050526-SUPERMAXI`), que guarda `cliente`; así stock y pedido del mismo producto no se mezclan y la trazabilidad dice para quién se elaboró. Mismo cliente el mismo día se suma al mismo lote de pedido.
 - **Código de producto**: 2–6 letras mayúsculas; la(s) última(s) indican especie (R res, C cerdo, P pollo, V vísceras, B borrego, I importado, PV pavo).
   Variantes = código base + calificativo (`CR` lomo falda → `CRA` limpio; `ER` industrial → `ERE` especial). `fn_sugerir_codigos` sigue esa lógica.
 - **Recepción**: `recepciones` (cabecera) + `recepcion_detalle` (una fila por jaba). Total = `kg_real × precio_kg`. El trigger asigna el lote.

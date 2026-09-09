@@ -1,12 +1,12 @@
 -- =============================================================================
 --  07 · PRUEBAS de fn_editar_lote, fn_quitar_jaba, fn_anular_lote (07) y sobrante (10) (pgTAP)
---  Requiere 01–05, 07_correcciones.sql y 10_sobrante.sql. Todo dentro de una transacción que se
+--  Requiere 01–05, 07_correcciones.sql, 10_sobrante.sql y 13_pedidos.sql. Todo dentro de una transacción que se
 --  revierte al final: NO deja datos. Cualquier línea "not ok" es una falla.
 -- =============================================================================
 create extension if not exists pgtap;
 
 begin;
-select plan(40);
+select plan(46);
 
 -- Si estas fallan, falta cargar (o volver a cargar) 07_correcciones.sql: todo lo demás va a fallar también.
 select has_function('fn_editar_lote', array['uuid','date','text'], 'existe fn_editar_lote (cargar 07_correcciones.sql)');
@@ -125,6 +125,26 @@ select is((select kg_merma_no_reg from procesos where id = 'd2222222-2222-2222-2
 select cmp_ok((select kg_sobrante from fn_kpis(current_date, current_date)), '>=', 6.050, 'fn_kpis expone el sobrante');
 select cmp_ok((select kg_merma from fn_kpis(current_date, current_date)), '>=', 8.150, 'la merma del período no se descuenta con el sobrante');
 select is((select count(*) from v_alertas where tipo = 'SOBRANTE' and proceso_id = 'd2222222-2222-2222-2222-222222222222'), 1::bigint, 'aparece la alerta SOBRANTE');
+
+-- -----------------------------------------------------------------------------
+-- 5. Pedidos (13_pedidos.sql): stock y pedido del mismo producto van a lotes distintos
+-- -----------------------------------------------------------------------------
+insert into recepciones (id, fecha, proveedor_id) values ('e1111111-1111-1111-1111-111111111111', '2026-05-25', _pr(131));
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('e1111111-1111-1111-1111-111111111111', _p('AR'), 100, 6.0);
+insert into procesos (id, tipo_proceso_id, fecha) values ('e2222222-2222-2222-2222-222222222222', (select id from tipos_proceso where codigo='LIMPIEZA'), '2026-05-26');
+insert into proceso_entradas (proceso_id, lote_id, kg_tomados) values ('e2222222-2222-2222-2222-222222222222', (_lote(131,'AR','2026-05-25')).id, 100);
+insert into proceso_salidas (proceso_id, producto_id, rol, kg, precio_credito, destino, cliente) values
+  ('e2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 40, null, 'stock',  null),
+  ('e2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 30, null, 'pedido', 'Supermaxi Ñ.'),
+  ('e2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 20, null, 'pedido', 'Supermaxi Ñ.'),
+  ('e2222222-2222-2222-2222-222222222222', _p('VNR'), 'merma',     10, null, 'stock',  null);
+select fn_procesar('e2222222-2222-2222-2222-222222222222');
+select is(fn_sufijo_pedido('Supermaxi Ñ.'), '-SUPERMAXIN', 'sufijo: mayúsculas, sin acentos ni símbolos');
+select is((_lote(131,'ARL','2026-05-26')).kg_inicial, 40.000, 'el lote de stock solo tiene los kg para stock');
+select is((select kg_inicial from lotes where codigo = '131ARL260526-SUPERMAXIN'), 50.000, 'el pedido tiene su propio lote y suma las dos salidas del mismo cliente');
+select is((select cliente from lotes where codigo = '131ARL260526-SUPERMAXIN'), 'Supermaxi Ñ.', 'el lote recuerda para quién se elaboró');
+select is((select destino from lotes where codigo = '131ARL260526-SUPERMAXIN'), 'pedido', 'y su destino');
+select is((select count(*) from v_trazabilidad where lote_hijo = '131ARL260526-SUPERMAXIN' and cliente = 'Supermaxi Ñ.'), 1::bigint, 'la trazabilidad muestra el cliente');
 
 select * from finish();
 rollback;

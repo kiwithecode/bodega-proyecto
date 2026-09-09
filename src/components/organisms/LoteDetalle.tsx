@@ -75,7 +75,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
   return (
     <>
       <h2><Mono style={{ fontSize: 18 }}>{lote.codigo}</Mono></h2>
-      <Sub>{lote.productos?.nombre} · {lote.proveedores?.nombre ?? 'mezcla de proveedores'} · {fmt.fecha(lote.fecha)}<br />
+      <Sub>{lote.productos?.nombre} · {lote.proveedores?.nombre ?? 'mezcla de proveedores'} · {fmt.fecha(lote.fecha)}{lote.destino === 'pedido' && <> · <b>elaborado para {lote.cliente ?? 'un pedido'}</b></>}<br />
         {fmt.kg(lote.kg_inicial)} kg iniciales, {fmt.kg(lote.kg_disponible)} disponibles · costo {fmt.usd4(lote.costo_kg)}/kg</Sub>
       {msg && <Notice tipo={msg.t}>{msg.m}</Notice>}
 
@@ -127,7 +127,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
         <h3 style={{ margin: '14px 0 6px' }}>Salió de aquí</h3>
         <DataTable<Trazabilidad> filas={hijos} filaKey={(h) => h.lote_hijo} columnas={[
           { key: 'h', titulo: 'Lote hijo', render: (h) => <Mono>{h.lote_hijo}</Mono> },
-          { key: 'rol', titulo: 'Tipo' },
+          { key: 'rol', titulo: 'Tipo', render: (h) => <>{h.rol}{h.destino === 'pedido' && <Ayuda>pedido · {h.cliente}</Ayuda>}</> },
           { key: 'proc', titulo: 'Proceso', render: (h) => <><Link to={`/procesar?id=${h.proceso_id}`}>{h.proceso} · {fmt.fecha(h.fecha_proceso)}</Link>{h.obrero && <Ayuda>{h.obrero}</Ayuda>}</> },
           { key: 'kg', titulo: 'kg', n: true, render: (h) => fmt.kg(h.kg_salida) },
           { key: 'c', titulo: '$/kg', n: true, render: (h) => fmt.usd4(h.costo_kg) },

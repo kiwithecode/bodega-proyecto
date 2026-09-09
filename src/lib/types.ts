@@ -1,6 +1,8 @@
 /** Espejo de las tablas, vistas y funciones de 01–05 .sql */
 export type Rol = 'principal' | 'subproducto' | 'merma' | 'devolucion'
 export type EstadoLote = 'disponible' | 'agotado' | 'anulado'
+/** Para qué se elaboró un lote hijo: para la cámara o para el pedido de un cliente. */
+export type Destino = 'stock' | 'pedido'
 export type Semaforo = 'OK' | 'BAJO' | 'SIN STOCK' | 'ALTO'
 export type Veredicto = 'REPETIDO' | 'MUY PARECIDO' | 'PARECIDO' | 'MISMO NOMBRE, OTRA ESPECIE'
 export type NivelLog = 'error' | 'warn' | 'info'
@@ -16,7 +18,7 @@ export interface TipoProceso { id: number; codigo: string; nombre: string }
 export interface Lote {
   id: string; codigo: string; producto_id: number; proveedor_id: number | null; fecha: string
   origen: 'recepcion' | 'proceso'; kg_inicial: number; kg_disponible: number; costo_kg: number; estado: EstadoLote
-  observaciones: string | null
+  observaciones: string | null; destino?: Destino; cliente?: string | null
   productos?: { nombre: string; codigo: string } | null
   proveedores?: { nombre: string; codigo: number } | null
 }
@@ -33,7 +35,7 @@ export interface Proceso {
 export interface ProcesoEntrada { id?: string; proceso_id?: string; lote_id: string; kg_tomados: number; kg_devueltos: number; costo_kg_aplicado?: number }
 export interface ProcesoSalida {
   id?: string; proceso_id?: string; producto_id: number; rol: Rol; kg: number; precio_credito: number | null
-  conserva_proveedor: boolean; costo_kg?: number; lote_id?: string | null
+  conserva_proveedor: boolean; costo_kg?: number; lote_id?: string | null; destino?: Destino; cliente?: string | null
   lotes?: { codigo: string } | null; productos?: { nombre: string } | null
 }
 
@@ -42,6 +44,7 @@ export interface StockLote {
   id: string; codigo: string; fecha: string; dias_en_camara: number; especie: string | null
   producto_codigo: string; producto: string; rol_defecto: Rol; proveedor_codigo: number | null; proveedor: string | null
   origen: 'recepcion' | 'proceso'; kg_inicial: number; kg_disponible: number; costo_kg: number; valor_stock: number; estado: EstadoLote
+  destino?: Destino; cliente?: string | null
 }
 /** v_stock_semaforo */
 export interface StockSemaforo {
@@ -73,7 +76,7 @@ export interface PrecioCompra { fecha: string; proveedor_codigo: number; proveed
 export interface Obrero { obrero: string; procesos: number; ultimo: string }
 export interface Trazabilidad {
   lote_hijo: string; rol: Rol; kg_salida: number; costo_kg: number; proceso_id: string; proceso: string; fecha_proceso: string
-  lote_padre: string; kg_tomados: number; kg_devueltos: number; costo_kg_aplicado: number; obrero?: string | null
+  lote_padre: string; kg_tomados: number; kg_devueltos: number; costo_kg_aplicado: number; obrero?: string | null; destino?: Destino; cliente?: string | null
 }
 export interface Similar { id: number; codigo: string | number; nombre: string; especie?: string; misma_especie?: boolean; similitud: number; veredicto: Veredicto }
 export interface CodigoSugerido { codigo: string; regla: string; prioridad: number }
@@ -88,4 +91,5 @@ export interface LogResumen { nivel: NivelLog; ultimas_24h: number; ultimos_7d: 
 /** Formularios (lo que digita la persona, antes de convertir a número) */
 export interface LineaRecepcion { producto_id: number | null; kg_real: string; precio_kg: string; kg_factura: string; calidad_ok: boolean; observaciones: string }
 export interface EntradaForm { lote_id: string | null; kg_tomados: string | number; kg_devueltos: string | number }
-export interface SalidaForm { producto_id: number | null; rol: Rol; kg: string | number; precio_credito: string | number; conserva_proveedor: boolean }
+export interface SalidaForm { producto_id: number | null; rol: Rol; kg: string | number; precio_credito: string | number; conserva_proveedor: boolean; destino: Destino; cliente: string }
+export interface Cliente { cliente: string; pedidos: number; ultimo: string }

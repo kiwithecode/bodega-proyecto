@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ayuda, Button, Input, Mono, Notice } from '../components/atoms'
+import { Ayuda, Badge, Button, Input, Mono, Notice } from '../components/atoms'
 import { Chips, Tabs } from '../components/molecules'
 import { DataTable, LeyendaSemaforo, LoteDetalle, Panel, StockTable, type NivelStock } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
@@ -21,7 +21,7 @@ export default function Stock() {
   const f = q.trim().toLowerCase()
   const prodF = prod.data.filter((p) => (estado === 'Todos' || p.semaforo === estado) && (!f || `${p.producto} ${p.codigo} ${p.especie ?? ''}`.toLowerCase().includes(f)))
   const cuenta = (sem: Semaforo) => prod.data.filter((p) => p.semaforo === sem).length
-  const loteF = lotes.data.filter((l) => (!prodSel || l.producto_codigo === prodSel.codigo) && (!f || `${l.codigo} ${l.producto} ${l.proveedor ?? ''}`.toLowerCase().includes(f)))
+  const loteF = lotes.data.filter((l) => (!prodSel || l.producto_codigo === prodSel.codigo) && (!f || `${l.codigo} ${l.producto} ${l.proveedor ?? ''} ${l.cliente ?? ''}`.toLowerCase().includes(f)))
   const totKg = prodF.reduce((a, p) => a + Number(p.kg_disponible), 0); const totVal = prodF.reduce((a, p) => a + Number(p.valor_stock), 0)
 
   const recargarTodo = () => Promise.all([prod.recargar(), lotes.recargar()])
@@ -33,12 +33,12 @@ export default function Stock() {
 
   const exportar = () => exportarExcel([
     { nombre: 'Stock por producto', filas: prodF.map((p) => ({ Código: p.codigo, Producto: p.producto, Especie: p.especie, 'Kg disponibles': +p.kg_disponible, Lotes: p.lotes, 'Costo prom $/kg': p.costo_kg_prom, 'Valor $': +p.valor_stock, 'Mínimo kg': p.kg_minimo, 'Consumo kg/día': p.kg_por_dia, 'Días cobertura': p.dias_cobertura, 'Días en cámara': p.dias_lote_mas_antiguo, Estado: p.semaforo })) },
-    { nombre: 'Stock por lote', filas: loteF.map((l) => ({ Lote: l.codigo, Fecha: l.fecha, Producto: l.producto, Proveedor: l.proveedor, Origen: l.origen, 'Kg inicial': +l.kg_inicial, 'Kg disponibles': +l.kg_disponible, 'Costo $/kg': +l.costo_kg, 'Valor $': +l.valor_stock, 'Días en cámara': l.dias_en_camara })) },
+    { nombre: 'Stock por lote', filas: loteF.map((l) => ({ Lote: l.codigo, Fecha: l.fecha, Producto: l.producto, Proveedor: l.proveedor, Origen: l.origen, Destino: l.destino ?? 'stock', Cliente: l.cliente ?? '', 'Kg inicial': +l.kg_inicial, 'Kg disponibles': +l.kg_disponible, 'Costo $/kg': +l.costo_kg, 'Valor $': +l.valor_stock, 'Días en cámara': l.dias_en_camara })) },
   ], 'stock')
 
   return (
     <PageTemplate titulo="Stock" subtitulo={`${fmt.kg(totKg)} kg en cámara, valorados en ${fmt.usd(totVal)}.`} acciones={<>
-      <Input placeholder="Buscar producto, lote o proveedor…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 300 }} aria-label="Buscar" />
+      <Input placeholder="Buscar producto, lote, proveedor o cliente…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 300 }} aria-label="Buscar" />
       <Button onClick={exportar}>Exportar a Excel</Button></>}>
       <Notice tipo="error">{msg || prod.error || lotes.error}</Notice>
       <Notice tipo="ok">{aviso}</Notice>
@@ -58,7 +58,7 @@ export default function Stock() {
           {prodSel && <Notice tipo="info">Solo lotes de <b>{prodSel.producto}</b> <Mono>{prodSel.codigo}</Mono>. <Button variante="texto" tamano="chico" onClick={() => setProdSel(null)}>Ver todos los lotes</Button></Notice>}
           <DataTable<StockLote> filas={loteF} onFila={abrirLote} seleccionada={(l) => l.id === loteSel?.id} vacio="Ningún lote coincide." columnas={[
             { key: 'codigo', titulo: 'Lote', render: (l) => <Mono>{l.codigo}</Mono> },
-            { key: 'producto', titulo: 'Producto' },
+            { key: 'producto', titulo: 'Producto', render: (l) => <>{l.producto}{l.destino === 'pedido' && <> <Badge tono="info">Pedido · {l.cliente ?? 'cliente'}</Badge></>}</> },
             { key: 'proveedor', titulo: 'Proveedor', render: (l) => l.proveedor ?? <i>mezcla</i> },
             { key: 'fecha', titulo: 'Ingreso', render: (l) => fmt.fecha(l.fecha) },
             { key: 'dias', titulo: 'Días', n: true, render: (l) => l.dias_en_camara },
