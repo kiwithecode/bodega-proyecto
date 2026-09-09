@@ -10,7 +10,8 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 - **Frontend: React 18 + TypeScript + Vite**, Atomic Design, CSS Modules, `@supabase/supabase-js`, `xlsx` para exportar. Desplegado en Vercel.
 - **Tests:** Vitest + Testing Library (unitarios/componentes), pgTAP (base), Playwright (e2e).
 
-## Scripts SQL (carpeta `db/` o donde estén los `0N_*.sql`) — se ejecutan en orden en el SQL Editor
+## Scripts SQL (carpeta `db/`) — se ejecutan en orden en el SQL Editor, una sola vez cada uno
+Regla: cada archivo es idempotente por sí mismo, pero **no se re-ejecuta un archivo viejo** después de uno más nuevo que redefina la misma vista (Postgres no deja quitar columnas con `create or replace view`). La definición vigente de `v_trazabilidad` vive en el archivo de mayor número que la toque (hoy 14).
 | Archivo | Contenido |
 |---|---|
 | `00_reset.sql` | Borra todo. Solo para empezar de cero. |

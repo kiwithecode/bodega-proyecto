@@ -9,7 +9,7 @@ import { calcularBalance, validarProceso } from '../lib/cuadre'
 import { duracion, fmt, hora, hoy } from '../lib/format'
 import { fechaValida } from '../lib/series'
 import type { Cliente, EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
-import { listObreros, listProductos, listTiposProceso } from '../services/catalogos'
+import { crearObrero, listObreros, listProductos, listTiposProceso } from '../services/catalogos'
 import * as srv from '../services/procesos'
 
 const salidasIniciales = () => [salidaVacia('principal'), salidaVacia('subproducto'), salidaVacia('merma')]
@@ -28,6 +28,14 @@ export default function Procesar() {
   const [salidas, setSalidas] = useState<SalidaForm[]>(salidasIniciales())
   const [error, setError] = useState(''); const [guardando, setGuardando] = useState(false)
   const [aceptaSobra, setAceptaSobra] = useState(false)   // cerrar aunque las salidas pesen más que la entrada
+  const [nuevoObrero, setNuevoObrero] = useState<string | null>(null)   // null = cerrado; '' o texto = agregando
+  const agregarObrero = async () => {
+    const nombre = (nuevoObrero ?? '').trim(); if (!nombre) return
+    const existente = obreros.data.find((o) => o.nombre.trim().toLowerCase() === nombre.toLowerCase())
+    if (existente) { up('obrero_id', existente.id); setNuevoObrero(null); return }
+    try { const o = await crearObrero(nombre); await obreros.recargar(); up('obrero_id', o.id); setNuevoObrero(null); setError('') }
+    catch (e) { setError(/duplicate|unique|obreros_nombre_uk/i.test((e as Error).message) ? `Ya existe un obrero llamado "${nombre}" (quizá está desactivado: revisa Catálogos → Obreros).` : (e as Error).message) }
+  }
   const [resultado, setResultado] = useState<srv.ResultadoProceso | null>(null)
   const up = <K extends keyof srv.CabeceraProceso>(k: K, v: srv.CabeceraProceso[K]) => setCab((c) => ({ ...c, [k]: v }))
 
@@ -84,9 +92,19 @@ export default function Procesar() {
           <Field label="Fecha"><Input tipo="date" value={cab.fecha} min="2020-01-01" max={hoy()} onChange={(e) => up('fecha', e.target.value)} /></Field>
           <Field label="Hora inicio"><Input tipo="time" value={cab.hora_inicio ?? ''} onChange={(e) => up('hora_inicio', e.target.value)} aria-label="Hora inicio" /></Field>
           <Field label="Hora fin" ayuda={duracion(cab.hora_inicio, cab.hora_fin) && `Duración: ${duracion(cab.hora_inicio, cab.hora_fin)}`}><Input tipo="time" value={cab.hora_fin ?? ''} onChange={(e) => up('hora_fin', e.target.value)} aria-label="Hora fin" /></Field>
-          <Field label="Quién procesó" ayuda={obreros.data.length === 0 && !obreros.cargando && <>Aún no hay obreros: agrégalos en <Link to="/catalogos">Catálogos → Obreros</Link>.</>}>
-            <Select value={cab.obrero_id ?? ''} onChange={(e) => up('obrero_id', e.target.value ? Number(e.target.value) : null)} aria-label="Quién procesó"
-              opciones={[{ value: '', label: 'Sin asignar' }, ...obreros.data.map((o) => ({ value: o.id, label: o.nombre }))]} />
+          <Field label="Quién procesó" ayuda={nuevoObrero == null && obreros.data.length === 0 && !obreros.cargando && 'Aún no hay obreros: pulsa "Nuevo" para agregar el primero.'}>
+            {nuevoObrero == null
+              ? <span style={{ display: 'flex', gap: 6 }}>
+                <Select value={cab.obrero_id ?? ''} onChange={(e) => up('obrero_id', e.target.value ? Number(e.target.value) : null)} aria-label="Quién procesó"
+                  opciones={[{ value: '', label: 'Sin asignar' }, ...obreros.data.map((o) => ({ value: o.id, label: o.nombre }))]} />
+                <Button variante="secundario" onClick={() => setNuevoObrero('')} title="Agregar un obrero que no está en la lista" aria-label="Nuevo obrero">Nuevo</Button>
+              </span>
+              : <span style={{ display: 'flex', gap: 6 }}>
+                <Input value={nuevoObrero} onChange={(e) => setNuevoObrero(e.target.value)} placeholder="Nombre y apellido" autoFocus aria-label="Nombre del nuevo obrero"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void agregarObrero() } if (e.key === 'Escape') setNuevoObrero(null) }} />
+                <Button variante="primario" onClick={() => void agregarObrero()} disabled={!nuevoObrero.trim()}>Agregar</Button>
+                <Button onClick={() => setNuevoObrero(null)}>Cancelar</Button>
+              </span>}
           </Field>
           <Field label="Observaciones" style={{ gridColumn: 'span 2' }}><Input value={cab.observaciones ?? ''} onChange={(e) => up('observaciones', e.target.value)} /></Field>
         </Grid>

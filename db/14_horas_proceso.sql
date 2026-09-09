@@ -1,6 +1,6 @@
 -- =============================================================================
 --  14 · HORAS DEL PROCESO  —  a qué hora empezó y terminó cada proceso
---  Ejecutar después de 13_pedidos.sql (redefine v_trazabilidad con sus columnas). Idempotente.
+--  Ejecutar después de 08 y 13. Es la definición vigente de v_trazabilidad (obrero, destino, cliente, horas). Idempotente.
 --  Ambas opcionales. Si termina después de medianoche (fin < inicio) el frontend suma 24 h.
 -- =============================================================================
 alter table procesos add column if not exists hora_inicio time;

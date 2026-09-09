@@ -1,6 +1,6 @@
 -- =============================================================================
 --  13 · PEDIDOS  —  salidas de proceso "para stock" o "para el pedido de un cliente"
---  Ejecutar después de 01–05 y 08 (redefine v_trazabilidad con la columna obrero). Idempotente.
+--  Ejecutar después de 01–05 y 08, y luego 14 (que redefine v_trazabilidad con destino, cliente y horas). Idempotente.
 --
 --  La misma pulpa limpia puede salir para la cámara (stock) o elaborarse para un
 --  cliente concreto (pedido). Para trazabilidad esos kilos NO deben caer en el mismo
@@ -28,8 +28,9 @@ returns text language sql immutable as $$
 $$;
 
 -- fn_obtener_lote con sufijo opcional (reemplaza la de 01; las llamadas de 4 argumentos siguen funcionando).
+-- Se borra la versión de 4 argumentos para que no quede ambigua; la de 5 se crea o reemplaza (repetible).
 drop function if exists fn_obtener_lote(int, int, date, origen_lote);
-create function fn_obtener_lote(p_producto_id int, p_proveedor_id int, p_fecha date, p_origen origen_lote, p_sufijo text default null)
+create or replace function fn_obtener_lote(p_producto_id int, p_proveedor_id int, p_fecha date, p_origen origen_lote, p_sufijo text default null)
 returns uuid language plpgsql as $$
 declare
     v_codigo text;
@@ -171,18 +172,7 @@ select l.id, l.codigo, l.fecha,
  where l.estado = 'disponible'
    and po.rol_defecto <> 'merma';
 
-create or replace view v_trazabilidad as
-select hijo.codigo as lote_hijo, ps.rol, ps.kg as kg_salida, ps.costo_kg,
-       p.id as proceso_id, tp.nombre as proceso, p.fecha as fecha_proceso,
-       padre.codigo as lote_padre, pe.kg_tomados, pe.kg_devueltos, pe.costo_kg_aplicado,
-       p.obrero,
-       hijo.destino, hijo.cliente
-  from proceso_salidas ps
-  join procesos p on p.id = ps.proceso_id
-  join tipos_proceso tp on tp.id = p.tipo_proceso_id
-  join lotes hijo on hijo.id = ps.lote_id
-  join proceso_entradas pe on pe.proceso_id = p.id
-  join lotes padre on padre.id = pe.lote_id;
+-- v_trazabilidad (con destino y cliente) se redefine en 14_horas_proceso.sql, que agrega también las horas.
 
 -- Clientes ya usados, el más reciente primero (autocompletado en Procesar).
 create or replace function fn_clientes()
@@ -192,4 +182,4 @@ returns table (cliente text, pedidos bigint, ultimo date) language sql stable as
      group by cliente order by max(fecha) desc, count(*) desc
 $$;
 grant execute on function fn_obtener_lote(int, int, date, origen_lote, text), fn_sufijo_pedido(text), fn_clientes() to authenticated;
-grant select on v_stock_lotes, v_trazabilidad to authenticated;
+grant select on v_stock_lotes to authenticated;
