@@ -21,7 +21,7 @@ Usuario: Supabase → Authentication → Users → Add user (Auto Confirm).
 `npm run typecheck` pasa con `strict`.
 
 ## Base de datos (`db/`)
-`00_reset` · `01_schema` · `02_seed_catalogos` · `03_alta_catalogos` · `04_metricas_alertas` · `05_auditoria_logs` · **`07_correcciones`** (editar fecha / quitar una jaba / anular lote; obligatorio para que Stock y Lotes puedan corregir) · **`08_proceso_obrero`** (columna `procesos.obrero`, `fn_obreros`; obligatorio para el campo "Quién procesó") · `09_pendientes_cerrados` (HUP confirmado y limpieza semanal de logs con pg_cron) · **`10_sobrante`** (cerrar procesos cuyas salidas pesan más que la entrada: KPIs sin merma negativa, `kg_sobrante`, alerta SOBRANTE). Se cargan en orden en el SQL Editor. Los `*_tests_pgtap.sql` se corren aparte y no dejan datos.
+`00_reset` · `01_schema` · `02_seed_catalogos` · `03_alta_catalogos` · `04_metricas_alertas` · `05_auditoria_logs` · **`07_correcciones`** (editar fecha / quitar una jaba / anular lote; obligatorio para que Stock y Lotes puedan corregir) · **`08_proceso_obrero`** (columna `procesos.obrero`, `fn_obreros`; obligatorio para el campo "Quién procesó") · `09_pendientes_cerrados` (HUP confirmado y limpieza semanal de logs con pg_cron) · **`10_sobrante`** (cerrar procesos cuyas salidas pesan más que la entrada: KPIs sin merma negativa, `kg_sobrante`, alerta SOBRANTE) · **`11_stock_alto`** (semáforo con nivel ALTO por encima del kg ideal; mínimo e ideal opcionales). Se cargan en orden en el SQL Editor. Los `*_tests_pgtap.sql` se corren aparte y no dejan datos.
 
 ## Estructura
 ```
@@ -42,7 +42,7 @@ tests/e2e/      Playwright
 ```
 
 ## Pantallas
-**Tablero** (KPIs del período, alertas, stock y cinco gráficas: kilos por día, rendimiento y merma, compras por proveedor, costo real semanal y rendimiento por proveedor del producto elegido) · Recibir · Procesar · **Stock** (por producto y por lote; desde cualquier lote se corrige fecha, kilos y precio, se quita una jaba digitada de más, o se anula la recepción completa; los lotes que salieron de un proceso se corrigen en el proceso) · Lotes · Costos · Catálogos · **Actividad** (cambios en los datos con quién/cuándo/qué, y errores de la aplicación: JS, render, promesas rechazadas y respuestas de error de Supabase se registran solos).
+**Tablero** (KPIs del período, alertas, stock y cinco gráficas: kilos por día, rendimiento y merma, compras por proveedor, costo real semanal y rendimiento por proveedor del producto elegido) · Recibir · Procesar · **Stock** (por producto con semáforo de cuatro colores, medidor por fila, filtro por estado y mínimo/ideal editables; por lote; desde cualquier lote se corrige fecha, kilos y precio, se quita una jaba digitada de más, o se anula la recepción completa; los lotes que salieron de un proceso se corrigen en el proceso) · Lotes · Costos · Catálogos · **Actividad** (cambios en los datos con quién/cuándo/qué, y errores de la aplicación: JS, render, promesas rechazadas y respuestas de error de Supabase se registran solos).
 
 ## Reglas para que siga escalando
 - Un componente = `X.tsx` + `X.module.css`. Sin CSS global nuevo; solo tokens.

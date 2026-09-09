@@ -1,0 +1,11 @@
+/* Medidor de stock por producto: el relleno lleva el estado, la pista es un tono claro del mismo color. */
+.kg { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.medidor { position: relative; width: 96px; height: 6px; border-radius: 3px; overflow: visible; }
+.relleno { height: 100%; border-radius: 3px; min-width: 0; }
+.marca { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink-2); border-radius: 1px; }
+.critico { background: var(--rojo-suave); } .critico .relleno { background: var(--rojo); }
+.aviso   { background: var(--ambar-suave); } .aviso .relleno { background: var(--ambar); }
+.ok      { background: var(--verde-suave); } .ok .relleno { background: var(--verde); }
+.info    { background: var(--azul-suave); } .info .relleno { background: var(--azul); }
+.leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 8px 0 2px; }
+.leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }

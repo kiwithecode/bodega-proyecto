@@ -1,7 +1,7 @@
 /** Espejo de las tablas, vistas y funciones de 01–05 .sql */
 export type Rol = 'principal' | 'subproducto' | 'merma' | 'devolucion'
 export type EstadoLote = 'disponible' | 'agotado' | 'anulado'
-export type Semaforo = 'OK' | 'BAJO' | 'SIN STOCK'
+export type Semaforo = 'OK' | 'BAJO' | 'SIN STOCK' | 'ALTO'
 export type Veredicto = 'REPETIDO' | 'MUY PARECIDO' | 'PARECIDO' | 'MISMO NOMBRE, OTRA ESPECIE'
 export type NivelLog = 'error' | 'warn' | 'info'
 

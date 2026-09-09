@@ -11,17 +11,26 @@ const filas: StockSemaforo[] = [
   { ...base, producto_id: 2, codigo: 'CR', producto: 'Lomo falda', kg_disponible: 0, lotes: 0, semaforo: 'SIN STOCK' },
 ]
 describe('StockTable', () => {
-  it('ordena SIN STOCK → BAJO → OK', () => {
-    render(<StockTable filas={filas} />)
+  it('ordena SIN STOCK → BAJO → ALTO → OK', () => {
+    render(<StockTable filas={[...filas, { ...base, producto_id: 4, codigo: 'ER', producto: 'Industrial', kg_disponible: 900, kg_ideal: 500, semaforo: 'ALTO' }]} />)
     const celdas = screen.getAllByRole('row').slice(1).map((r) => r.querySelector('td')?.textContent)
-    expect(celdas[0]).toContain('Lomo falda'); expect(celdas[1]).toContain('Pulpa res'); expect(celdas[2]).toContain('Lomo fino')
+    expect(celdas[0]).toContain('Lomo falda'); expect(celdas[1]).toContain('Pulpa res'); expect(celdas[2]).toContain('Industrial'); expect(celdas[3]).toContain('Lomo fino')
+  })
+  it('el medidor lleva el estado y llena hasta el ideal', () => {
+    render(<StockTable filas={[{ ...base, kg_disponible: 25, kg_ideal: 100, semaforo: 'BAJO' }]} />)
+    const m = screen.getByRole('img', { name: /25,00 kg, BAJO/ })
+    expect(m.className).toMatch(/aviso/)
+    expect((m.firstChild as HTMLElement).style.width).toBe('25%')
   })
   it('muestra el semáforo como badge', () => { render(<StockTable filas={filas} />); expect(screen.getByText('SIN STOCK')).toBeInTheDocument() })
-  it('mínimo editable solo cuando se pasa onMinimo', () => {
+  it('mínimo e ideal editables solo cuando se pasa onNivel', async () => {
+    const u = userEvent.setup(); const cb = vi.fn()
     const { rerender } = render(<StockTable filas={[base]} />)
     expect(screen.queryByLabelText('Mínimo Pulpa res')).toBeNull()
-    rerender(<StockTable filas={[base]} onMinimo={() => undefined} />)
+    rerender(<StockTable filas={[base]} onNivel={cb} />)
     expect(screen.getByLabelText('Mínimo Pulpa res')).toHaveValue(50)
+    await u.type(screen.getByLabelText('Ideal Pulpa res'), '120'); await u.tab()
+    expect(cb).toHaveBeenCalledWith(base, 'kg_ideal', 120)
   })
   it('botón "Ver lotes" solo con onVerLotes, y avisa qué producto se eligió', async () => {
     const u = userEvent.setup(); const cb = vi.fn()

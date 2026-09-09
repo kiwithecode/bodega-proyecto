@@ -5,6 +5,6 @@ export type Tono = 'ok' | 'aviso' | 'critico' | 'info' | 'neutro'
 export function Badge({ tono = 'neutro', children, style }: { tono?: Tono; children: ReactNode; style?: React.CSSProperties }) {
   return <span className={`${s.pill} ${s[tono]}`} style={style}>{children}</span>
 }
-export const tonoSemaforo = (v: Semaforo): Tono => v === 'OK' ? 'ok' : v === 'BAJO' ? 'aviso' : 'critico'
+export const tonoSemaforo = (v: Semaforo): Tono => ({ OK: 'ok', BAJO: 'aviso', 'SIN STOCK': 'critico', ALTO: 'info' } as Record<Semaforo, Tono>)[v] ?? 'neutro'
 export const tonoNivel = (n: number): Tono => n === 1 ? 'critico' : n === 2 ? 'aviso' : n === 3 ? 'info' : 'neutro'
 export const tonoVeredicto = (v: Veredicto): Tono => v === 'REPETIDO' ? 'critico' : v === 'PARECIDO' ? 'neutro' : 'aviso'

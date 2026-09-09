@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Ayuda, Button, Input, Mono, Notice } from '../components/atoms'
-import { Tabs } from '../components/molecules'
-import { DataTable, LoteDetalle, Panel, StockTable } from '../components/organisms'
+import { Chips, Tabs } from '../components/molecules'
+import { DataTable, LeyendaSemaforo, LoteDetalle, Panel, StockTable, type NivelStock } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { fmt } from '../lib/format'
-import type { Lote, StockLote, StockSemaforo } from '../lib/types'
+import type { Lote, Semaforo, StockLote, StockSemaforo } from '../lib/types'
 import * as srv from '../services/stock'
 import { getLote } from '../services/lotes'
 import { exportarExcel } from '../services/excel'
@@ -15,15 +15,17 @@ export default function Stock() {
   const [tab, setTab] = useState<Tab>('productos'); const [q, setQ] = useState('')
   const [msg, setMsg] = useState(''); const [aviso, setAviso] = useState('')
   const [prodSel, setProdSel] = useState<StockSemaforo | null>(null)   // "Ver lotes" de un producto
+  const [estado, setEstado] = useState<'Todos' | Semaforo>('Todos')   // filtro por semáforo
   const [loteSel, setLoteSel] = useState<Lote | null>(null)             // lote abierto para corregir
   const prod = useAsync<StockSemaforo[]>(srv.getSemaforo, [], []); const lotes = useAsync<StockLote[]>(srv.getLotesStock, [], [])
   const f = q.trim().toLowerCase()
-  const prodF = prod.data.filter((p) => !f || `${p.producto} ${p.codigo} ${p.especie ?? ''}`.toLowerCase().includes(f))
+  const prodF = prod.data.filter((p) => (estado === 'Todos' || p.semaforo === estado) && (!f || `${p.producto} ${p.codigo} ${p.especie ?? ''}`.toLowerCase().includes(f)))
+  const cuenta = (sem: Semaforo) => prod.data.filter((p) => p.semaforo === sem).length
   const loteF = lotes.data.filter((l) => (!prodSel || l.producto_codigo === prodSel.codigo) && (!f || `${l.codigo} ${l.producto} ${l.proveedor ?? ''}`.toLowerCase().includes(f)))
   const totKg = prodF.reduce((a, p) => a + Number(p.kg_disponible), 0); const totVal = prodF.reduce((a, p) => a + Number(p.valor_stock), 0)
 
   const recargarTodo = () => Promise.all([prod.recargar(), lotes.recargar()])
-  const minimo = (p: StockSemaforo, kg: number | null) => Promise.resolve(srv.guardarMinimo(p.producto_id, kg)).then(() => prod.recargar()).catch((e: Error) => setMsg(e.message))
+  const nivel = (p: StockSemaforo, campo: NivelStock, kg: number | null) => Promise.resolve(srv.guardarNiveles(p.producto_id, { kg_minimo: p.kg_minimo, kg_ideal: p.kg_ideal, [campo]: kg })).then(() => prod.recargar()).catch((e: Error) => setMsg(e.message))
   const verLotes = (p: StockSemaforo) => { setProdSel(p); setLoteSel(null); setTab('lotes') }
   const abrirLote = (l: StockLote) => { setMsg(''); setAviso(''); Promise.resolve(getLote(l.id)).then(setLoteSel).catch((e: Error) => setMsg(e.message)) }
   const loteCambiado = () => { void recargarTodo(); if (loteSel) Promise.resolve(getLote(loteSel.id)).then(setLoteSel).catch(() => setLoteSel(null)) }
@@ -42,7 +44,16 @@ export default function Stock() {
       <Notice tipo="ok">{aviso}</Notice>
       <Panel>
         <Tabs<Tab> activo={tab} onChange={setTab} items={[{ id: 'productos', label: `Por producto (${prodF.length})` }, { id: 'lotes', label: `Por lote (${loteF.length})` }]} />
-        {tab === 'productos' && <StockTable filas={prodF} onMinimo={minimo} onVerLotes={verLotes} />}
+        {tab === 'productos' && <>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', margin: '4px 0 10px' }}>
+            <Chips valor={estado} onChange={(v) => setEstado(v as 'Todos' | Semaforo)} items={[
+              { valor: 'Todos', detalle: String(prod.data.length) }, { valor: 'SIN STOCK', detalle: String(cuenta('SIN STOCK')) },
+              { valor: 'BAJO', detalle: String(cuenta('BAJO')) }, { valor: 'OK', detalle: String(cuenta('OK')) }, { valor: 'ALTO', detalle: String(cuenta('ALTO')) },
+            ]} />
+          </div>
+          <StockTable filas={prodF} onNivel={nivel} onVerLotes={verLotes} />
+          <LeyendaSemaforo />
+        </>}
         {tab === 'lotes' && <>
           {prodSel && <Notice tipo="info">Solo lotes de <b>{prodSel.producto}</b> <Mono>{prodSel.codigo}</Mono>. <Button variante="texto" tamano="chico" onClick={() => setProdSel(null)}>Ver todos los lotes</Button></Notice>}
           <DataTable<StockLote> filas={loteF} onFila={abrirLote} seleccionada={(l) => l.id === loteSel?.id} vacio="Ningún lote coincide." columnas={[
@@ -65,7 +76,7 @@ export default function Stock() {
         </Panel>
       )}
       <Ayuda style={{ marginTop: 10 }}>
-        El mínimo en kg es opcional: si lo pones, el tablero avisa cuando el producto baja de esa cantidad. La cobertura usa el consumo real de los últimos 30 días.
+        Cada fila suma todos los lotes del producto, sin importar el proveedor. Mínimo e ideal son opcionales: bajo el mínimo el producto se marca BAJO y el tablero avisa; por encima del ideal se marca ALTO. La cobertura usa el consumo real de los últimos 30 días.
         {' '}Para corregir un error de digitación, abre el lote desde <b>Por lote</b> (o con <b>Ver lotes</b> en un producto): ahí se cambia fecha, kilos y precio, o se anula la recepción.
       </Ayuda>
     </PageTemplate>

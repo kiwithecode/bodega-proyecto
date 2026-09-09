@@ -23,6 +23,7 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
 | `07_tests_correcciones_pgtap.sql` | 40 pruebas de correcciones y sobrante; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `11_stock_alto.sql` | `v_stock_semaforo` con estado `ALTO` (kg > `stock_minimos.kg_ideal`); `kg_minimo` pasa a nullable. |
 | `10_sobrante.sql` | Salidas > entrada: `fn_kpis` y vistas usan `greatest(kg_merma_no_reg,0)` + `kg_sobrante`; alerta `SOBRANTE` (nivel 3). |
 | `09_pendientes_cerrados.sql` | HUP confirmado (`por_confirmar = false`) y `cron.schedule('limpiar-logs')` semanal (domingo 03:00 Quito) para `fn_limpiar_logs()`. |
 
@@ -40,6 +41,8 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 - **Costo**: neto = Σ(kg consumidos × costo_kg de entrada) − Σ(subproductos × precio_credito); costo/kg principal = neto ÷ Σ kg principales.
   Lotes hijos que se fusionan (misma clave) → promedio ponderado. Editar precio de compra **recalcula en cascada** todos los descendientes.
 - Venas/sangre/desperdicio **no son stock** ni disparan alertas de lote viejo.
+- **Semáforo de stock** (`v_stock_semaforo`, por producto sumando todos sus lotes): `SIN STOCK` rojo · `BAJO` ámbar (< mínimo o < 2 días de consumo) · `ALTO` azul (> ideal) · `OK` verde.
+  Mínimo e ideal viven en `stock_minimos` (ambos opcionales) y se editan en Stock → Por producto vía `guardarNiveles`. El tono lo da `tonoSemaforo`; el medidor de la fila llena hasta el ideal.
 - Kilos que no cuadran quedan en `procesos.kg_merma_no_reg` y disparan alerta si superan `parametros.merma_max_pct`.
   Si las salidas pesan MÁS que la entrada (error humano de pesaje), `kg_merma_no_reg` queda negativo (= sobrante): el frontend pide marcar
   "Cerrar con sobrante" (`validarProceso(..., permitirSobra)`), la base lo cierra, no lo descuenta de la merma y dispara la alerta `SOBRANTE`.
