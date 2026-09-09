@@ -1,12 +1,12 @@
 -- =============================================================================
 --  07 · PRUEBAS de fn_editar_lote, fn_quitar_jaba, fn_anular_lote (07) y sobrante (10) (pgTAP)
---  Requiere 01–05, 07_correcciones.sql, 10_sobrante.sql, 13_pedidos.sql, 14_horas_proceso.sql y 15_obreros.sql. Todo dentro de una transacción que se
+--  Requiere 01–05 y 07–16. Todo dentro de una transacción que se
 --  revierte al final: NO deja datos. Cualquier línea "not ok" es una falla.
 -- =============================================================================
 create extension if not exists pgtap;
 
 begin;
-select plan(52);
+select plan(54);
 create temp table _res (linea text);   -- guarda cada resultado para listar los fallos al final
 
 -- Si estas fallan, falta cargar (o volver a cargar) 07_correcciones.sql: todo lo demás va a fallar también.
@@ -139,9 +139,14 @@ insert into proceso_salidas (proceso_id, producto_id, rol, kg, precio_credito, d
   ('e2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 30, null, 'pedido', 'Supermaxi Ñ.'),
   ('e2222222-2222-2222-2222-222222222222', _p('ARL'), 'principal', 20, null, 'pedido', 'Supermaxi Ñ.'),
   ('e2222222-2222-2222-2222-222222222222', _p('VNR'), 'merma',     10, null, 'stock',  null);
+update proceso_salidas set kg = 30 where proceso_id = 'e2222222-2222-2222-2222-222222222222' and producto_id = _p('ARL') and destino = 'stock';
+insert into proceso_salidas (proceso_id, producto_id, rol, kg, precio_credito, destino) values
+  ('e2222222-2222-2222-2222-222222222222', _p('ER'), 'subproducto', 10, 3.3, 'moler');
 select fn_procesar('e2222222-2222-2222-2222-222222222222');
+insert into _res select is((select kg_inicial from lotes where codigo = '131ER260526-MOLER'), 10.000, 'una salida "para moler" va a su lote -MOLER');
+insert into _res select is((select destino from lotes where codigo = '131ER260526-MOLER'), 'moler', 'y el lote queda marcado para moler');
 insert into _res select is(fn_sufijo_pedido('Supermaxi Ñ.'), '-SUPERMAXIN', 'sufijo: mayúsculas, sin acentos ni símbolos');
-insert into _res select is((_lote(131,'ARL','2026-05-26')).kg_inicial, 40.000, 'el lote de stock solo tiene los kg para stock');
+insert into _res select is((_lote(131,'ARL','2026-05-26')).kg_inicial, 30.000, 'el lote de stock solo tiene los kg para stock');
 insert into _res select is((select kg_inicial from lotes where codigo = '131ARL260526-SUPERMAXIN'), 50.000, 'el pedido tiene su propio lote y suma las dos salidas del mismo cliente');
 insert into _res select is((select cliente from lotes where codigo = '131ARL260526-SUPERMAXIN'), 'Supermaxi Ñ.', 'el lote recuerda para quién se elaboró');
 insert into _res select is((select destino from lotes where codigo = '131ARL260526-SUPERMAXIN'), 'pedido', 'y su destino');

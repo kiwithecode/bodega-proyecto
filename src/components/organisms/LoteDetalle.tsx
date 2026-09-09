@@ -4,7 +4,7 @@ import { Ayuda, Button, Input, Mono, Notice, Sub } from '../atoms'
 import { Field } from '../molecules'
 import { DataTable } from './DataTable'
 import { Grid } from './Panel'
-import { codigoLote, duracion, fmt, hora } from '../../lib/format'
+import { codigoLote, duracion, etiquetaDestino, fmt, hora } from '../../lib/format'
 import * as srv from '../../services/lotes'
 import type { Lote, RecepcionDetalle, Trazabilidad } from '../../lib/types'
 
@@ -75,7 +75,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
   return (
     <>
       <h2><Mono style={{ fontSize: 18 }}>{lote.codigo}</Mono></h2>
-      <Sub>{lote.productos?.nombre} · {lote.proveedores?.nombre ?? 'mezcla de proveedores'} · {fmt.fecha(lote.fecha)}{lote.destino === 'pedido' && <> · <b>elaborado para {lote.cliente ?? 'un pedido'}</b></>}<br />
+      <Sub>{lote.productos?.nombre} · {lote.proveedores?.nombre ?? 'mezcla de proveedores'} · {fmt.fecha(lote.fecha)}{lote.destino === 'pedido' && <> · <b>elaborado para {lote.cliente ?? 'un pedido'}</b></>}{(lote.destino === 'moler' || lote.destino === 'cortar') && <> · <b>{etiquetaDestino(lote.destino).toLowerCase()}</b></>}<br />
         {fmt.kg(lote.kg_inicial)} kg iniciales, {fmt.kg(lote.kg_disponible)} disponibles · costo {fmt.usd4(lote.costo_kg)}/kg</Sub>
       {msg && <Notice tipo={msg.t}>{msg.m}</Notice>}
 

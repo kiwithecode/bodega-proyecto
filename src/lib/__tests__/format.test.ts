@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { duracion, hora, codigoLote, num, fmt } from '../format'
+import { duracion, hora, codigoLote, num, fmt, destinoSugerido, etiquetaDestino } from '../format'
 
 describe('codigoLote', () => {
   it('arma <proveedor><producto><ddmmyy>', () => {
@@ -31,5 +31,11 @@ describe('fmt', () => {
     expect(duracion('08:10', '11:45')).toBe('3 h 35 min'); expect(duracion('08:00', '10:00')).toBe('2 h'); expect(duracion('08:00', '08:40')).toBe('40 min')
     expect(duracion('22:30', '01:15')).toBe('2 h 45 min') // pasó la medianoche
     expect(duracion('08:00', '')).toBe('')
+  })
+  it('destino sugerido por producto', () => {
+    expect(destinoSugerido('Industrial res (corriente)', 'subproducto')).toBe('moler')
+    expect(destinoSugerido('Goulash especial', 'subproducto')).toBe('cortar')
+    expect(destinoSugerido('Pulpa res limpia', 'principal')).toBe('stock')
+    expect(etiquetaDestino('moler')).toBe('Para moler'); expect(etiquetaDestino(null)).toBe('Stock')
   })
 })

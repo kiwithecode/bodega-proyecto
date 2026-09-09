@@ -29,3 +29,16 @@ export const codigoLote = (provCodigo: number | string | null | undefined, prodC
   if (!prodCodigo || !fecha || fecha.length !== 10) return ''
   const [y, m, d] = fecha.split('-'); return `${provCodigo ?? ''}${prodCodigo}${d}${m}${y.slice(2)}`
 }
+
+/** Etiquetas del destino de un lote hijo (Procesar → Destino). */
+export const DESTINOS: { value: 'stock' | 'pedido' | 'moler' | 'cortar'; label: string }[] = [
+  { value: 'stock', label: 'Stock' }, { value: 'pedido', label: 'Pedido' }, { value: 'moler', label: 'Para moler' }, { value: 'cortar', label: 'Para cortar' },
+]
+export const etiquetaDestino = (d: string | null | undefined) => DESTINOS.find((x) => x.value === d)?.label ?? 'Stock'
+/** Destino sugerido según el producto: industriales → moler, goulash → cortar, lo demás → stock. */
+export const destinoSugerido = (nombre: string | undefined, rol: string | undefined): 'stock' | 'moler' | 'cortar' => {
+  const n = (nombre ?? '').toLowerCase()
+  if (rol === 'subproducto' && n.includes('industrial')) return 'moler'
+  if (n.includes('goulash')) return 'cortar'
+  return 'stock'
+}

@@ -1,7 +1,7 @@
 import { Ayuda, Button, Input, Select, type Opcion } from '../atoms'
 import { Combo } from '../molecules'
 import { DataTable, type Columna } from './DataTable'
-import { fmt } from '../../lib/format'
+import { DESTINOS, destinoSugerido, fmt } from '../../lib/format'
 import type { Destino, Producto, Rol, SalidaForm } from '../../lib/types'
 
 export const ROLES: Opcion[] = [
@@ -15,7 +15,7 @@ export function ProcesoSalidas({ salidas, onChange, productos, kgSalidas, costoN
   const set = <K extends keyof SalidaForm>(i: number, campo: K, v: SalidaForm[K]) => onChange(salidas.map((s, j) => {
     if (j !== i) return s
     const n = { ...s, [campo]: v }
-    if (campo === 'producto_id') { const p = productos.find((x) => x.id === v); if (p) n.rol = p.rol_defecto }
+    if (campo === 'producto_id') { const p = productos.find((x) => x.id === v); if (p) { n.rol = p.rol_defecto; if (n.destino !== 'pedido') n.destino = destinoSugerido(p.nombre, p.rol_defecto) } }
     return n
   }))
   const columnas: Columna<SalidaForm>[] = [
@@ -28,7 +28,7 @@ export function ProcesoSalidas({ salidas, onChange, productos, kgSalidas, costoN
     { key: 'prov', titulo: 'Lote hijo', render: (s, i) => <Select chico value={s.conserva_proveedor ? '1' : '0'} onChange={(e) => set(i, 'conserva_proveedor', e.target.value === '1')} opciones={[{ value: '1', label: 'Con proveedor' }, { value: '0', label: 'Mezcla (sin proveedor)' }]} /> },
     { key: 'dest', titulo: 'Destino', ancho: '22%', render: (s, i) => s.rol === 'merma' ? <Ayuda>—</Ayuda> : (
       <span style={{ display: 'flex', gap: 6 }}>
-        <Select chico value={s.destino} onChange={(e) => set(i, 'destino', e.target.value as Destino)} opciones={[{ value: 'stock', label: 'Stock' }, { value: 'pedido', label: 'Pedido' }]} aria-label={`Destino fila ${i + 1}`} style={{ width: 96 }} />
+        <Select chico value={s.destino} onChange={(e) => set(i, 'destino', e.target.value as Destino)} opciones={DESTINOS} aria-label={`Destino fila ${i + 1}`} style={{ width: 120 }} />
         {s.destino === 'pedido' && <><Input chico value={s.cliente} onChange={(e) => set(i, 'cliente', e.target.value)} placeholder="Para quién" list="clientes-pedido" autoComplete="off" aria-label={`Cliente fila ${i + 1}`} />
           <datalist id="clientes-pedido">{clientes.map((c) => <option key={c} value={c} />)}</datalist></>}
       </span>) },

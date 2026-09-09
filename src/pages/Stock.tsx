@@ -4,8 +4,8 @@ import { Chips, Tabs } from '../components/molecules'
 import { DataTable, LeyendaSemaforo, LoteDetalle, Panel, StockTable, type NivelStock } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
-import { fmt } from '../lib/format'
-import type { Lote, Semaforo, StockLote, StockSemaforo } from '../lib/types'
+import { DESTINOS, etiquetaDestino, fmt } from '../lib/format'
+import type { Destino, Lote, Semaforo, StockLote, StockSemaforo } from '../lib/types'
 import * as srv from '../services/stock'
 import { getLote } from '../services/lotes'
 import { exportarExcel } from '../services/excel'
@@ -16,12 +16,14 @@ export default function Stock() {
   const [msg, setMsg] = useState(''); const [aviso, setAviso] = useState('')
   const [prodSel, setProdSel] = useState<StockSemaforo | null>(null)   // "Ver lotes" de un producto
   const [estado, setEstado] = useState<'Todos' | Semaforo>('Todos')   // filtro por semáforo
+  const [destino, setDestino] = useState<'Todos' | Destino>('Todos')   // filtro de lotes por destino
   const [loteSel, setLoteSel] = useState<Lote | null>(null)             // lote abierto para corregir
   const prod = useAsync<StockSemaforo[]>(srv.getSemaforo, [], []); const lotes = useAsync<StockLote[]>(srv.getLotesStock, [], [])
   const f = q.trim().toLowerCase()
   const prodF = prod.data.filter((p) => (estado === 'Todos' || p.semaforo === estado) && (!f || `${p.producto} ${p.codigo} ${p.especie ?? ''}`.toLowerCase().includes(f)))
   const cuenta = (sem: Semaforo) => prod.data.filter((p) => p.semaforo === sem).length
-  const loteF = lotes.data.filter((l) => (!prodSel || l.producto_codigo === prodSel.codigo) && (!f || `${l.codigo} ${l.producto} ${l.proveedor ?? ''} ${l.cliente ?? ''}`.toLowerCase().includes(f)))
+  const cuentaDestino = (d: Destino) => lotes.data.filter((l) => (l.destino ?? 'stock') === d).length
+  const loteF = lotes.data.filter((l) => (destino === 'Todos' || (l.destino ?? 'stock') === destino) && (!prodSel || l.producto_codigo === prodSel.codigo) && (!f || `${l.codigo} ${l.producto} ${l.proveedor ?? ''} ${l.cliente ?? ''}`.toLowerCase().includes(f)))
   const totKg = prodF.reduce((a, p) => a + Number(p.kg_disponible), 0); const totVal = prodF.reduce((a, p) => a + Number(p.valor_stock), 0)
 
   const recargarTodo = () => Promise.all([prod.recargar(), lotes.recargar()])
@@ -33,7 +35,7 @@ export default function Stock() {
 
   const exportar = () => exportarExcel([
     { nombre: 'Stock por producto', filas: prodF.map((p) => ({ Código: p.codigo, Producto: p.producto, Especie: p.especie, 'Kg disponibles': +p.kg_disponible, Lotes: p.lotes, 'Costo prom $/kg': p.costo_kg_prom, 'Valor $': +p.valor_stock, 'Mínimo kg': p.kg_minimo, 'Consumo kg/día': p.kg_por_dia, 'Días cobertura': p.dias_cobertura, 'Días en cámara': p.dias_lote_mas_antiguo, Estado: p.semaforo })) },
-    { nombre: 'Stock por lote', filas: loteF.map((l) => ({ Lote: l.codigo, Fecha: l.fecha, Producto: l.producto, Proveedor: l.proveedor, Origen: l.origen, Destino: l.destino ?? 'stock', Cliente: l.cliente ?? '', 'Kg inicial': +l.kg_inicial, 'Kg disponibles': +l.kg_disponible, 'Costo $/kg': +l.costo_kg, 'Valor $': +l.valor_stock, 'Días en cámara': l.dias_en_camara })) },
+    { nombre: 'Stock por lote', filas: loteF.map((l) => ({ Lote: l.codigo, Fecha: l.fecha, Producto: l.producto, Proveedor: l.proveedor, Origen: l.origen, Destino: etiquetaDestino(l.destino), Cliente: l.cliente ?? '', 'Kg inicial': +l.kg_inicial, 'Kg disponibles': +l.kg_disponible, 'Costo $/kg': +l.costo_kg, 'Valor $': +l.valor_stock, 'Días en cámara': l.dias_en_camara })) },
   ], 'stock')
 
   return (
@@ -56,9 +58,12 @@ export default function Stock() {
         </>}
         {tab === 'lotes' && <>
           {prodSel && <Notice tipo="info">Solo lotes de <b>{prodSel.producto}</b> <Mono>{prodSel.codigo}</Mono>. <Button variante="texto" tamano="chico" onClick={() => setProdSel(null)}>Ver todos los lotes</Button></Notice>}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', margin: '4px 0 10px' }}>
+            <Chips valor={destino} onChange={(v) => setDestino(v as 'Todos' | Destino)} items={[{ valor: 'Todos', detalle: String(lotes.data.length) }, ...DESTINOS.map((d) => ({ valor: d.value, detalle: `${d.label} · ${cuentaDestino(d.value)}` }))]} />
+          </div>
           <DataTable<StockLote> filas={loteF} onFila={abrirLote} seleccionada={(l) => l.id === loteSel?.id} vacio="Ningún lote coincide." columnas={[
             { key: 'codigo', titulo: 'Lote', render: (l) => <Mono>{l.codigo}</Mono> },
-            { key: 'producto', titulo: 'Producto', render: (l) => <>{l.producto}{l.destino === 'pedido' && <> <Badge tono="info">Pedido · {l.cliente ?? 'cliente'}</Badge></>}</> },
+            { key: 'producto', titulo: 'Producto', render: (l) => <>{l.producto}{l.destino === 'pedido' && <> <Badge tono="info">Pedido · {l.cliente ?? 'cliente'}</Badge></>}{(l.destino === 'moler' || l.destino === 'cortar') && <> <Badge tono="aviso">{etiquetaDestino(l.destino)}</Badge></>}</> },
             { key: 'proveedor', titulo: 'Proveedor', render: (l) => l.proveedor ?? <i>mezcla</i> },
             { key: 'fecha', titulo: 'Ingreso', render: (l) => fmt.fecha(l.fecha) },
             { key: 'dias', titulo: 'Días', n: true, render: (l) => l.dias_en_camara },

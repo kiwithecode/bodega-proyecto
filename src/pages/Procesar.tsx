@@ -6,7 +6,7 @@ import { Grid, Panel, PanelPie, ProcesoEntradas, ProcesoSalidas, entradaVacia, s
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { calcularBalance, validarProceso } from '../lib/cuadre'
-import { duracion, fmt, hora, hoy } from '../lib/format'
+import { duracion, etiquetaDestino, fmt, hora, hoy } from '../lib/format'
 import { fechaValida } from '../lib/series'
 import type { Cliente, EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
 import { crearObrero, listObreros, listProductos, listTiposProceso } from '../services/catalogos'
@@ -84,7 +84,7 @@ export default function Procesar() {
       {resultado && <Notice tipo="ok">Proceso cerrado{duracion(resultado.proceso.hora_inicio, resultado.proceso.hora_fin) && <> en <b>{duracion(resultado.proceso.hora_inicio, resultado.proceso.hora_fin)}</b></>}. Entrada {fmt.kg(resultado.proceso.kg_consumidos)} kg ({fmt.usd(resultado.proceso.costo_entrada)}), crédito subproductos {fmt.usd(resultado.proceso.credito_subproductos)}, costo neto {fmt.usd(resultado.proceso.costo_neto)}.
         {Number(resultado.proceso.kg_merma_no_reg) > 0 && <> Quedaron <b>{fmt.kg(resultado.proceso.kg_merma_no_reg)} kg sin justificar</b>.</>}
         {Number(resultado.proceso.kg_merma_no_reg) < -0.0005 && <> Las salidas pesaron <b>{fmt.kg(-Number(resultado.proceso.kg_merma_no_reg))} kg más que la entrada</b>: quedó registrado como sobrante y aparece en Alertas para revisar el pesaje.</>}
-        <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg{h.destino === 'pedido' && <> · <b>pedido para {h.cliente ?? 'cliente'}</b></>}</li>)}</ul></Notice>}
+        <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg{h.destino === 'pedido' && <> · <b>pedido para {h.cliente ?? 'cliente'}</b></>}{(h.destino === 'moler' || h.destino === 'cortar') && <> · <b>{etiquetaDestino(h.destino).toLowerCase()}</b></>}</li>)}</ul></Notice>}
       {procesoId && <Notice tipo="warn">Estás cerrando un proceso que quedó pendiente. <Link to="/procesar">Empezar uno nuevo</Link></Notice>}
       <Panel>
         <Grid form>

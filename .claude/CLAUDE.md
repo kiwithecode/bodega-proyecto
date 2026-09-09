@@ -22,8 +22,9 @@ Regla: cada archivo es idempotente por sí mismo, pero **no se re-ejecuta un arc
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 52 pruebas de correcciones, sobrante, pedidos y obreros; se revierte solo. |
+| `07_tests_correcciones_pgtap.sql` | 54 pruebas de correcciones, sobrante, pedidos, destinos y obreros; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `16_destinos_moler_cortar.sql` | `destino` admite `moler` y `cortar`; `fn_sufijo_destino` (-MOLER / -CORTAR / -CLIENTE); `fn_procesar` vigente. |
 | `15_obreros.sql` | Tabla `obreros` (nombre único por `lower(trim)`), `procesos.obrero_id` + trigger que copia el nombre a `procesos.obrero`; migra los nombres libres; `fn_rendimiento_obrero(desde,hasta)`; borra `fn_obreros()`. |
 | `14_horas_proceso.sql` | `procesos.hora_inicio/hora_fin` (time, opcionales) y en `v_trazabilidad`. Duración con `duracion()` de `format.ts` (si fin < inicio, pasó la medianoche). |
 | `13_pedidos.sql` | `proceso_salidas.destino/cliente` y `lotes.destino/cliente`; `fn_obtener_lote(…, p_sufijo)`; `fn_procesar` manda las salidas 'pedido' a un lote con sufijo `-CLIENTE` (`fn_sufijo_pedido`); `v_stock_lotes`/`v_trazabilidad` + destino, cliente; `fn_clientes()`. |
@@ -37,6 +38,7 @@ Regla: cada archivo es idempotente por sí mismo, pero **no se re-ejecuta un arc
 - **Código de lote = `<codigo_proveedor><codigo_producto><ddmmyy>`**, ej. `131AR040526`. Lo genera `fn_codigo_lote`; nadie lo escribe a mano.
   Mismo producto + mismo proveedor + misma fecha = **mismo lote** (varias jabas suman). Lotes mezclados (molida) no llevan proveedor: `EMC030226`.
   **Pedidos**: una salida de proceso con `destino='pedido'` va a un lote aparte con sufijo del cliente (`131ARL050526-SUPERMAXI`), que guarda `cliente`; así stock y pedido del mismo producto no se mezclan y la trazabilidad dice para quién se elaboró. Mismo cliente el mismo día se suma al mismo lote de pedido.
+  Otros destinos: `moler` (industrial corriente/especial → lote `-MOLER`, espera molienda) y `cortar` (goulash → lote `-CORTAR`, espera corte). `destinoSugerido()` en `format.ts` los propone al elegir el producto; Stock → Por lote filtra por destino. La definición vigente de `fn_procesar` está en el archivo de mayor número que la toque (hoy 16).
 - **Código de producto**: 2–6 letras mayúsculas; la(s) última(s) indican especie (R res, C cerdo, P pollo, V vísceras, B borrego, I importado, PV pavo).
   Variantes = código base + calificativo (`CR` lomo falda → `CRA` limpio; `ER` industrial → `ERE` especial). `fn_sugerir_codigos` sigue esa lógica.
 - **Recepción**: `recepciones` (cabecera) + `recepcion_detalle` (una fila por jaba). Total = `kg_real × precio_kg`. El trigger asigna el lote.

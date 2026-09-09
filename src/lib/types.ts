@@ -2,7 +2,7 @@
 export type Rol = 'principal' | 'subproducto' | 'merma' | 'devolucion'
 export type EstadoLote = 'disponible' | 'agotado' | 'anulado'
 /** Para qué se elaboró un lote hijo: para la cámara o para el pedido de un cliente. */
-export type Destino = 'stock' | 'pedido'
+export type Destino = 'stock' | 'pedido' | 'moler' | 'cortar'
 export type Semaforo = 'OK' | 'BAJO' | 'SIN STOCK' | 'ALTO'
 export type Veredicto = 'REPETIDO' | 'MUY PARECIDO' | 'PARECIDO' | 'MISMO NOMBRE, OTRA ESPECIE'
 export type NivelLog = 'error' | 'warn' | 'info'

@@ -40,7 +40,7 @@ export async function guardarProceso({ id, cabecera, entradas, salidas }: { id: 
     await supabase.from('proceso_salidas').insert(salidas.map((s) => ({
       proceso_id: id, producto_id: s.producto_id, rol: s.rol, kg: num(s.kg),
       precio_credito: s.rol === 'subproducto' ? num(s.precio_credito) : null, conserva_proveedor: s.conserva_proveedor,
-      destino: s.rol !== 'merma' && s.destino === 'pedido' ? 'pedido' : 'stock', cliente: s.rol !== 'merma' && s.destino === 'pedido' ? s.cliente.trim() || null : null,
+      destino: s.rol === 'merma' ? 'stock' : s.destino, cliente: s.rol !== 'merma' && s.destino === 'pedido' ? s.cliente.trim() || null : null,
     }))).then(ok)
   } catch (e) {
     if (nuevo) await supabase.from('procesos').delete().eq('id', id)
