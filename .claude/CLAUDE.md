@@ -21,8 +21,10 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 46 pruebas de correcciones, sobrante y pedidos; se revierte solo. |
+| `07_tests_correcciones_pgtap.sql` | 52 pruebas de correcciones, sobrante, pedidos y obreros; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `15_obreros.sql` | Tabla `obreros` (nombre único por `lower(trim)`), `procesos.obrero_id` + trigger que copia el nombre a `procesos.obrero`; migra los nombres libres; `fn_rendimiento_obrero(desde,hasta)`; borra `fn_obreros()`. |
+| `14_horas_proceso.sql` | `procesos.hora_inicio/hora_fin` (time, opcionales) y en `v_trazabilidad`. Duración con `duracion()` de `format.ts` (si fin < inicio, pasó la medianoche). |
 | `13_pedidos.sql` | `proceso_salidas.destino/cliente` y `lotes.destino/cliente`; `fn_obtener_lote(…, p_sufijo)`; `fn_procesar` manda las salidas 'pedido' a un lote con sufijo `-CLIENTE` (`fn_sufijo_pedido`); `v_stock_lotes`/`v_trazabilidad` + destino, cliente; `fn_clientes()`. |
 | `12_fechas_validas.sql` | CHECK `fecha between '2020-01-01' and current_date+1` (NOT VALID) en recepciones/procesos/lotes + consulta de filas a corregir. |
 | `11_stock_alto.sql` | `v_stock_semaforo` con estado `ALTO` (kg > `stock_minimos.kg_ideal`); `kg_minimo` pasa a nullable. |
@@ -38,7 +40,7 @@ no técnica, desde una PC. El desarrollador es Kevin (QA/DevOps); yo trabajo con
   Variantes = código base + calificativo (`CR` lomo falda → `CRA` limpio; `ER` industrial → `ERE` especial). `fn_sugerir_codigos` sigue esa lógica.
 - **Recepción**: `recepciones` (cabecera) + `recepcion_detalle` (una fila por jaba). Total = `kg_real × precio_kg`. El trigger asigna el lote.
 - **Proceso**: `procesos` + `proceso_entradas` (lote, kg_tomados, kg_devueltos) + `proceso_salidas` (producto, rol, kg, precio_credito, conserva_proveedor).
-  El frontend inserta filas y llama `rpc('fn_procesar', {p_proceso_id})`. `procesos.obrero` es quién lo hizo (texto libre, opcional, con autocompletado de nombres ya usados; sin catálogo de personal).
+  El frontend inserta filas y llama `rpc('fn_procesar', {p_proceso_id})`. Quién lo hizo: `procesos.obrero_id` → catálogo `obreros` (Catálogos → Obreros; se elige con un Select, nunca texto libre, para que el rendimiento por obrero no se reparta por errores de tipeo); `procesos.obrero` (texto) lo mantiene el trigger. `hora_inicio`/`hora_fin` opcionales.
 - **Roles de salida**: `principal` (recibe el costo), `subproducto` (se acredita a `precio_credito`, que se escribe en cada proceso),
   `merma` (costo 0, solo resta kilos: venas, sangre, desperdicio), `devolucion` (vuelve al lote origen).
 - **Costo**: neto = Σ(kg consumidos × costo_kg de entrada) − Σ(subproductos × precio_credito); costo/kg principal = neto ÷ Σ kg principales.

@@ -6,10 +6,10 @@ import { Grid, Panel, PanelPie, ProcesoEntradas, ProcesoSalidas, entradaVacia, s
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { calcularBalance, validarProceso } from '../lib/cuadre'
-import { fmt, hoy } from '../lib/format'
+import { duracion, fmt, hora, hoy } from '../lib/format'
 import { fechaValida } from '../lib/series'
 import type { Cliente, EntradaForm, Obrero, Producto, SalidaForm, StockLote, TipoProceso } from '../lib/types'
-import { listProductos, listTiposProceso } from '../services/catalogos'
+import { listObreros, listProductos, listTiposProceso } from '../services/catalogos'
 import * as srv from '../services/procesos'
 
 const salidasIniciales = () => [salidaVacia('principal'), salidaVacia('subproducto'), salidaVacia('merma')]
@@ -20,10 +20,10 @@ export default function Procesar() {
   const tipos = useAsync<TipoProceso[]>(listTiposProceso, [], [])
   const productos = useAsync<Producto[]>(() => listProductos(), [], [])
   const lotesQ = useAsync<StockLote[]>(srv.listLotesDisponibles, [], [])
-  const obreros = useAsync<Obrero[]>(srv.listObreros, [], [])
+  const obreros = useAsync<Obrero[]>(() => listObreros(), [], [])
   const clientes = useAsync<Cliente[]>(srv.listClientes, [], [])
   const [extraLotes, setExtraLotes] = useState<StockLote[]>([])
-  const [cab, setCab] = useState<srv.CabeceraProceso>({ tipo_proceso_id: null, fecha: hoy(), observaciones: '', obrero: '' })
+  const [cab, setCab] = useState<srv.CabeceraProceso>({ tipo_proceso_id: null, fecha: hoy(), observaciones: '', obrero_id: null, hora_inicio: '', hora_fin: '' })
   const [entradas, setEntradas] = useState<EntradaForm[]>([entradaVacia()])
   const [salidas, setSalidas] = useState<SalidaForm[]>(salidasIniciales())
   const [error, setError] = useState(''); const [guardando, setGuardando] = useState(false)
@@ -36,7 +36,7 @@ export default function Procesar() {
   useEffect(() => {
     if (!procesoId) return
     srv.getProceso(procesoId).then(({ proceso, entradas: en, salidas: sa, lotes }) => {
-      setCab({ tipo_proceso_id: proceso.tipo_proceso_id, fecha: proceso.fecha, observaciones: proceso.observaciones ?? '', obrero: proceso.obrero ?? '' })
+      setCab({ tipo_proceso_id: proceso.tipo_proceso_id, fecha: proceso.fecha, observaciones: proceso.observaciones ?? '', obrero_id: proceso.obrero_id ?? null, hora_inicio: hora(proceso.hora_inicio), hora_fin: hora(proceso.hora_fin) })
       if (en.length) setEntradas(en.map((e) => ({ lote_id: e.lote_id, kg_tomados: e.kg_tomados, kg_devueltos: e.kg_devueltos })))
       if (sa.length) setSalidas(sa.map((s) => ({ producto_id: s.producto_id, rol: s.rol, kg: s.kg, precio_credito: s.precio_credito ?? '', conserva_proveedor: s.conserva_proveedor, destino: s.destino ?? 'stock', cliente: s.cliente ?? '' })))
       setExtraLotes(lotes.map((l) => ({
@@ -60,11 +60,11 @@ export default function Procesar() {
     setGuardando(true)
     try {
       const r = await srv.guardarProceso({
-        id: procesoId, cabecera: { ...cab, observaciones: cab.observaciones || null, obrero: cab.obrero?.trim() || null },
+        id: procesoId, cabecera: { ...cab, observaciones: cab.observaciones || null, hora_inicio: cab.hora_inicio || null, hora_fin: cab.hora_fin || null },
         entradas: entradas.filter((e) => e.lote_id && Number(e.kg_tomados) > 0),
         salidas: salidas.filter((s) => s.producto_id && Number(s.kg) > 0),
       })
-      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); setAceptaSobra(false); void lotesQ.recargar(); void obreros.recargar(); void clientes.recargar()
+      setResultado(r); setEntradas([entradaVacia()]); setSalidas(salidasIniciales()); up('observaciones', ''); up('hora_inicio', ''); up('hora_fin', ''); setAceptaSobra(false); void lotesQ.recargar(); void clientes.recargar()
       if (procesoId) window.history.replaceState(null, '', '/procesar')
     } catch (e) { setError((e as Error).message) }
     setGuardando(false)
@@ -73,7 +73,7 @@ export default function Procesar() {
   return (
     <PageTemplate titulo="Procesar" subtitulo="Toma lotes de la cámara, anota lo que salió y el sistema reparte el costo.">
       <Notice tipo="error">{tipos.error || productos.error || lotesQ.error}</Notice>
-      {resultado && <Notice tipo="ok">Proceso cerrado. Entrada {fmt.kg(resultado.proceso.kg_consumidos)} kg ({fmt.usd(resultado.proceso.costo_entrada)}), crédito subproductos {fmt.usd(resultado.proceso.credito_subproductos)}, costo neto {fmt.usd(resultado.proceso.costo_neto)}.
+      {resultado && <Notice tipo="ok">Proceso cerrado{duracion(resultado.proceso.hora_inicio, resultado.proceso.hora_fin) && <> en <b>{duracion(resultado.proceso.hora_inicio, resultado.proceso.hora_fin)}</b></>}. Entrada {fmt.kg(resultado.proceso.kg_consumidos)} kg ({fmt.usd(resultado.proceso.costo_entrada)}), crédito subproductos {fmt.usd(resultado.proceso.credito_subproductos)}, costo neto {fmt.usd(resultado.proceso.costo_neto)}.
         {Number(resultado.proceso.kg_merma_no_reg) > 0 && <> Quedaron <b>{fmt.kg(resultado.proceso.kg_merma_no_reg)} kg sin justificar</b>.</>}
         {Number(resultado.proceso.kg_merma_no_reg) < -0.0005 && <> Las salidas pesaron <b>{fmt.kg(-Number(resultado.proceso.kg_merma_no_reg))} kg más que la entrada</b>: quedó registrado como sobrante y aparece en Alertas para revisar el pesaje.</>}
         <ul>{resultado.hijos.map((h, i) => <li key={i}><Mono><b>{h.lotes?.codigo}</b></Mono> {h.productos?.nombre} · {fmt.kg(h.kg)} kg · {fmt.usd4(h.costo_kg)}/kg{h.destino === 'pedido' && <> · <b>pedido para {h.cliente ?? 'cliente'}</b></>}</li>)}</ul></Notice>}
@@ -82,9 +82,11 @@ export default function Procesar() {
         <Grid form>
           <Field label="Tipo de proceso"><Select value={cab.tipo_proceso_id ?? ''} onChange={(e) => up('tipo_proceso_id', Number(e.target.value))} opciones={tipos.data.map((t) => ({ value: t.id, label: t.nombre }))} aria-label="Tipo de proceso" /></Field>
           <Field label="Fecha"><Input tipo="date" value={cab.fecha} min="2020-01-01" max={hoy()} onChange={(e) => up('fecha', e.target.value)} /></Field>
-          <Field label="Quién procesó">
-            <Input value={cab.obrero ?? ''} onChange={(e) => up('obrero', e.target.value)} list="obreros" placeholder="Nombre del obrero" autoComplete="off" aria-label="Quién procesó" />
-            <datalist id="obreros">{obreros.data.map((o) => <option key={o.obrero} value={o.obrero} />)}</datalist>
+          <Field label="Hora inicio"><Input tipo="time" value={cab.hora_inicio ?? ''} onChange={(e) => up('hora_inicio', e.target.value)} aria-label="Hora inicio" /></Field>
+          <Field label="Hora fin" ayuda={duracion(cab.hora_inicio, cab.hora_fin) && `Duración: ${duracion(cab.hora_inicio, cab.hora_fin)}`}><Input tipo="time" value={cab.hora_fin ?? ''} onChange={(e) => up('hora_fin', e.target.value)} aria-label="Hora fin" /></Field>
+          <Field label="Quién procesó" ayuda={obreros.data.length === 0 && !obreros.cargando && <>Aún no hay obreros: agrégalos en <Link to="/catalogos">Catálogos → Obreros</Link>.</>}>
+            <Select value={cab.obrero_id ?? ''} onChange={(e) => up('obrero_id', e.target.value ? Number(e.target.value) : null)} aria-label="Quién procesó"
+              opciones={[{ value: '', label: 'Sin asignar' }, ...obreros.data.map((o) => ({ value: o.id, label: o.nombre }))]} />
           </Field>
           <Field label="Observaciones" style={{ gridColumn: 'span 2' }}><Input value={cab.observaciones ?? ''} onChange={(e) => up('observaciones', e.target.value)} /></Field>
         </Grid>

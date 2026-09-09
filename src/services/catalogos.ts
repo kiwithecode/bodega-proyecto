@@ -1,5 +1,5 @@
 import { supabase, ok } from '../lib/supabase'
-import type { CodigoSugerido, Especie, Producto, Proveedor, Rol, Similar, TipoProceso } from '../lib/types'
+import type { CodigoSugerido, Especie, Obrero, Producto, Proveedor, Rol, Similar, TipoProceso } from '../lib/types'
 
 export const listEspecies = () => supabase.from('especies').select('*').order('id').then((r) => ok<Especie[]>(r))
 export const listTiposProceso = () => supabase.from('tipos_proceso').select('*').order('id').then((r) => ok<TipoProceso[]>(r))
@@ -27,3 +27,13 @@ export const siguienteCodigoProveedor = () => supabase.rpc('fn_siguiente_codigo_
 export interface NuevoProveedor { nombre: string; acuerdo: string; forzar: boolean }
 export const crearProveedor = (p: NuevoProveedor) => supabase.rpc('fn_crear_proveedor', { p_nombre: p.nombre, p_acuerdo: p.acuerdo || null, p_forzar: p.forzar }).then((r) => ok<Proveedor>(r))
 export const actualizarProveedor = (id: number, cambios: Partial<Proveedor>) => supabase.from('proveedores').update(cambios).eq('id', id).then(ok)
+
+/** Obreros (15_obreros.sql). El nombre es único sin importar mayúsculas ni espacios. */
+export const listObreros = ({ soloActivos = true } = {}) => {
+  let q = supabase.from('obreros').select('*').order('nombre')
+  if (soloActivos) q = q.eq('activo', true)
+  return q.then((r) => ok<Obrero[]>(r))
+}
+export const crearObrero = (nombre: string) => supabase.from('obreros').insert({ nombre: nombre.trim() }).select().single().then((r) => ok<Obrero>(r))
+export const actualizarObrero = (id: number, cambios: Partial<Pick<Obrero, 'nombre' | 'activo' | 'notas'>>) =>
+  supabase.from('obreros').update({ ...cambios, ...(cambios.nombre != null ? { nombre: cambios.nombre.trim() } : {}) }).eq('id', id).then(ok)

@@ -1,6 +1,6 @@
 import { supabase, ok } from '../lib/supabase'
 import { num } from '../lib/format'
-import type { Cliente, EntradaForm, Lote, Obrero, Proceso, ProcesoEntrada, ProcesoSalida, SalidaForm, StockLote } from '../lib/types'
+import type { Cliente, EntradaForm, Lote, Proceso, ProcesoEntrada, ProcesoSalida, SalidaForm, StockLote } from '../lib/types'
 
 export const listLotesDisponibles = () => supabase.from('v_stock_lotes').select('*').gt('kg_disponible', 0).order('fecha').then((r) => ok<StockLote[]>(r))
 
@@ -16,9 +16,8 @@ export async function getProceso(id: string) {
   return { proceso, entradas, salidas, lotes }
 }
 
-export interface CabeceraProceso { tipo_proceso_id: number | null; fecha: string; observaciones: string | null; obrero: string | null }
-/** Nombres de quienes ya procesaron, el más reciente primero (fn_obreros, 08_proceso_obrero.sql). */
-export const listObreros = () => supabase.rpc('fn_obreros').then((r) => ok<Obrero[]>(r))
+/** `obrero_id` viene del catálogo (15_obreros.sql); el trigger copia el nombre a procesos.obrero. */
+export interface CabeceraProceso { tipo_proceso_id: number | null; fecha: string; observaciones: string | null; obrero_id: number | null; hora_inicio: string | null; hora_fin: string | null }
 /** Clientes con pedidos elaborados, el más reciente primero (fn_clientes, 13_pedidos.sql). */
 export const listClientes = () => supabase.rpc('fn_clientes').then((r) => ok<Cliente[]>(r))
 export interface ResultadoProceso { proceso: Proceso; hijos: ProcesoSalida[] }

@@ -10,6 +10,16 @@ export const fmt = {
   fecha: (v: string | null | undefined) => (v ? new Date(v.length === 10 ? v + 'T00:00:00' : v).toLocaleDateString('es-EC') : ''),
   hora:  (v: string | null | undefined) => (v ? new Date(v).toLocaleString('es-EC', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''),
 }
+/** 'HH:MM[:SS]' → 'HH:MM'. */
+export const hora = (v: string | null | undefined) => (v ? v.slice(0, 5) : '')
+/** Duración entre dos horas 'HH:MM' como "3 h 25 min"; si fin < inicio se asume que pasó la medianoche. Vacío si falta alguna. */
+export const duracion = (inicio: string | null | undefined, fin: string | null | undefined) => {
+  if (!inicio || !fin) return ''
+  const [hi, mi] = inicio.split(':').map(Number), [hf, mf] = fin.split(':').map(Number)
+  if ([hi, mi, hf, mf].some((x) => isNaN(x))) return ''
+  let min = (hf * 60 + mf) - (hi * 60 + mi); if (min < 0) min += 24 * 60
+  return min >= 60 ? `${Math.floor(min / 60)} h ${min % 60 ? `${min % 60} min` : ''}`.trim() : `${min} min`
+}
 export const hoy = () => new Date().toISOString().slice(0, 10)
 export const diasAtras = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
 /** Texto digitado → número. Acepta coma decimal. Vacío o basura → 0. */

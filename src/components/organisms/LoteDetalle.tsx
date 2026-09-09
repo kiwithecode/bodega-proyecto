@@ -4,7 +4,7 @@ import { Ayuda, Button, Input, Mono, Notice, Sub } from '../atoms'
 import { Field } from '../molecules'
 import { DataTable } from './DataTable'
 import { Grid } from './Panel'
-import { codigoLote, fmt } from '../../lib/format'
+import { codigoLote, duracion, fmt, hora } from '../../lib/format'
 import * as srv from '../../services/lotes'
 import type { Lote, RecepcionDetalle, Trazabilidad } from '../../lib/types'
 
@@ -119,7 +119,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
         <h3 style={{ margin: '14px 0 6px' }}>Viene de</h3>
         <DataTable<Trazabilidad> filas={det.padres} filaKey={(_, i) => i} columnas={[
           { key: 'p', titulo: 'Lote padre', render: (p) => <Mono>{p.lote_padre}</Mono> },
-          { key: 'proc', titulo: 'Proceso', render: (p) => <><Link to={`/procesar?id=${p.proceso_id}`}>{p.proceso} · {fmt.fecha(p.fecha_proceso)}</Link>{p.obrero && <Ayuda>{p.obrero}</Ayuda>}</> },
+          { key: 'proc', titulo: 'Proceso', render: (p) => <><Link to={`/procesar?id=${p.proceso_id}`}>{p.proceso} · {fmt.fecha(p.fecha_proceso)}</Link>{(p.obrero || p.hora_inicio) && <Ayuda>{[p.obrero, p.hora_inicio && `${hora(p.hora_inicio)}–${hora(p.hora_fin)}`, duracion(p.hora_inicio, p.hora_fin)].filter(Boolean).join(' · ')}</Ayuda>}</> },
           { key: 'kg', titulo: 'kg tomados', n: true, render: (p) => fmt.kg(p.kg_tomados) },
           { key: 'c', titulo: '$/kg aplicado', n: true, render: (p) => fmt.usd4(p.costo_kg_aplicado) },
         ]} /></>}
@@ -128,7 +128,7 @@ export function LoteDetalle({ lote, onCambio, onAnulado }: { lote: Lote; onCambi
         <DataTable<Trazabilidad> filas={hijos} filaKey={(h) => h.lote_hijo} columnas={[
           { key: 'h', titulo: 'Lote hijo', render: (h) => <Mono>{h.lote_hijo}</Mono> },
           { key: 'rol', titulo: 'Tipo', render: (h) => <>{h.rol}{h.destino === 'pedido' && <Ayuda>pedido · {h.cliente}</Ayuda>}</> },
-          { key: 'proc', titulo: 'Proceso', render: (h) => <><Link to={`/procesar?id=${h.proceso_id}`}>{h.proceso} · {fmt.fecha(h.fecha_proceso)}</Link>{h.obrero && <Ayuda>{h.obrero}</Ayuda>}</> },
+          { key: 'proc', titulo: 'Proceso', render: (h) => <><Link to={`/procesar?id=${h.proceso_id}`}>{h.proceso} · {fmt.fecha(h.fecha_proceso)}</Link>{(h.obrero || h.hora_inicio) && <Ayuda>{[h.obrero, h.hora_inicio && `${hora(h.hora_inicio)}–${hora(h.hora_fin)}`, duracion(h.hora_inicio, h.hora_fin)].filter(Boolean).join(' · ')}</Ayuda>}</> },
           { key: 'kg', titulo: 'kg', n: true, render: (h) => fmt.kg(h.kg_salida) },
           { key: 'c', titulo: '$/kg', n: true, render: (h) => fmt.usd4(h.costo_kg) },
         ]} /></>}

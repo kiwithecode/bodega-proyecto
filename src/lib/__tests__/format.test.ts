@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { codigoLote, num, fmt } from '../format'
+import { duracion, hora, codigoLote, num, fmt } from '../format'
 
 describe('codigoLote', () => {
   it('arma <proveedor><producto><ddmmyy>', () => {
@@ -26,4 +26,10 @@ describe('fmt', () => {
   it('usd con símbolo', () => { expect(fmt.usd(768.9)).toMatch(/^\$768,90$/) })
   it('nulos no rompen', () => { expect(fmt.kg(null)).toBe(''); expect(fmt.pct(undefined)).toBe('') })
   it('fecha corta no se corre un día por zona horaria', () => { expect(fmt.fecha('2026-05-04')).toMatch(/4\/5\/2026|04\/05\/2026/) })
+  it('hora y duración del proceso', () => {
+    expect(hora('08:10:00')).toBe('08:10'); expect(hora(null)).toBe('')
+    expect(duracion('08:10', '11:45')).toBe('3 h 35 min'); expect(duracion('08:00', '10:00')).toBe('2 h'); expect(duracion('08:00', '08:40')).toBe('40 min')
+    expect(duracion('22:30', '01:15')).toBe('2 h 45 min') // pasó la medianoche
+    expect(duracion('08:00', '')).toBe('')
+  })
 })

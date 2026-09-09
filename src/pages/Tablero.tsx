@@ -7,7 +7,7 @@ import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
 import { fmt, hoy, diasAtras } from '../lib/format'
 import { MAX_DIAS_SERIE, diaCorto, diasEntre, rellenarDias, sumarPor, topN } from '../lib/series'
-import type { Alerta, CostoSemanal, Kpis, MetricaDiaria, PrecioCompra, RendimientoProveedor, StockSemaforo } from '../lib/types'
+import type { Alerta, CostoSemanal, Kpis, MetricaDiaria, PrecioCompra, RendimientoObrero, RendimientoProveedor, StockSemaforo } from '../lib/types'
 import * as tab from '../services/tablero'
 import { getSemaforo } from '../services/stock'
 
@@ -41,6 +41,7 @@ export default function Tablero() {
   const desdeSemana = semanaISO(desde < restarDias(hasta, 84) ? desde : restarDias(hasta, 84))
   const costoSem = useAsync<CostoSemanal[]>(() => tab.getCostoSemanal(desdeSemana), [desdeSemana], [])
   const rend = useAsync<RendimientoProveedor[]>(() => producto ? tab.getRendimientoProducto(producto) : Promise.resolve([]), [producto], [])
+  const obreros = useAsync<RendimientoObrero[]>(() => tab.getRendimientoObrero(desde, hasta), [desde, hasta], [])
   const k = kpi.data
 
   // Productos con costo en la ventana, ordenados por kg; el mayor es el producto por defecto.
@@ -71,6 +72,8 @@ export default function Tablero() {
   const etiquetasSem = semanas.map((c) => diaCorto(c.semana))
   // Rendimiento por proveedor del producto elegido.
   const barrasRend = rend.data.filter((r) => Number(r.kg_entrada) > 0).map((r) => ({ etiqueta: r.proveedor, valor: Number(r.rendimiento_pct), detalle: `${r.procesos} proc. · ${fmt.usd4(r.costo_real_kg)}/kg real` }))
+  // Rendimiento por obrero: % principal, con procesos, kg y kg/hora (si registraron horas).
+  const barrasObrero = obreros.data.filter((o) => Number(o.kg_entrada) > 0).map((o) => ({ etiqueta: o.obrero, valor: Number(o.rendimiento_pct ?? 0), detalle: `${o.procesos} proc. · ${fmt.kg(o.kg_entrada)} kg${o.kg_por_hora != null ? ` · ${fmt.kg(o.kg_por_hora)} kg/h` : ''}${Number(o.merma_pct) > 0 ? ` · merma ${fmt.pct(o.merma_pct)}` : ''}` }))
 
   return (
     <PageTemplate titulo="Tablero" subtitulo="Qué hay, qué falta y qué revisar hoy." acciones={<>
@@ -79,7 +82,7 @@ export default function Tablero() {
       <Field label="Hasta" style={{ margin: 0 }}><Input tipo="date" value={hasta} onChange={(e) => { setRango('Personalizado'); setHasta(e.target.value) }} aria-label="Hasta" /></Field>
       <Field label="Producto (costo y rendimiento)" style={{ margin: 0 }}>
         <Select value={producto} onChange={(e) => setProducto(e.target.value)} aria-label="Producto" opciones={productos.length ? productos.map((p) => ({ value: p.codigo, label: `${p.nombre} (${p.codigo})` })) : [{ value: '', label: 'Sin datos' }]} /></Field></>}>
-      <Notice tipo="error">{kpi.error || alertas.error || stock.error || diario.error || compras.error || costoSem.error || rend.error}</Notice>
+      <Notice tipo="error">{kpi.error || alertas.error || stock.error || diario.error || compras.error || costoSem.error || rend.error || obreros.error}</Notice>
       <KpiGrid items={[
         { valor: k && fmt.kg(k.kg_stock_actual) + ' kg', etiqueta: 'Stock actual' },
         { valor: k && fmt.usd(k.valor_stock_actual), etiqueta: 'Valor del stock' },
@@ -116,10 +119,15 @@ export default function Tablero() {
           <GraficaLineas etiquetas={etiquetasSem} series={costoSerie} formato={(v) => fmt.usd4(v)} marcadores eje="auto" />
         </Figura>
       </Grid>
-      <Grid dos style={{ marginTop: 18, opacity: rend.cargando ? .6 : 1 }}>
+      <Grid dos style={{ marginTop: 18, opacity: rend.cargando || obreros.cargando ? .6 : 1 }}>
         <Figura titulo="Rendimiento por proveedor" sub={`% de ${nombreProducto || '…'} que sale como producto principal · histórico, procesos de un solo lote`}>
           <GraficaBarras filas={barrasRend} formato={fmt.pct} detalle />
         </Figura>
+        <Figura titulo="Rendimiento por obrero" sub="% de producto principal sobre lo que entró a sus procesos en el período · kg/h solo si registraron horas">
+          <GraficaBarras filas={barrasObrero} formato={fmt.pct} detalle />
+        </Figura>
+      </Grid>
+      <Grid dos style={{ marginTop: 18 }}>
         <Panel titulo="Cómo leer estas gráficas">
           <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-2)', fontSize: 13.5, lineHeight: 1.6 }}>
             <li><b>Kilos por día</b>: si lo procesado supera lo recibido varios días, la cámara se está vaciando (mira Cobertura en Stock).</li>
@@ -127,6 +135,7 @@ export default function Tablero() {
             <li><b>Compras por proveedor</b>: a quién le compras más en el período. Pasa el mouse para ver los kg.</li>
             <li><b>Costo real semanal</b>: lo que de verdad cuesta el kg del producto elegido, con la cascada de procesos ya aplicada.</li>
             <li><b>Rendimiento por proveedor</b>: quién trae mejor carne para ese producto, con el costo real por kg limpio.</li>
+            <li><b>Rendimiento por obrero</b>: cuánto producto principal saca cada persona de lo que procesa, y su velocidad en kg por hora si anotaron hora de inicio y fin. Los obreros se administran en Catálogos.</li>
           </ul>
         </Panel>
       </Grid>
