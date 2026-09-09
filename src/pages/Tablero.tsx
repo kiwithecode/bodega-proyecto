@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Input, Notice, Select } from '../components/atoms'
-import { Field } from '../components/molecules'
+import { Chips, Field } from '../components/molecules'
 import { AlertList, Figura, GraficaBarras, GraficaLineas, Grid, KpiGrid, Panel, StockTable, TablaSeries, type Serie } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
@@ -16,9 +16,21 @@ const vacioDia: Omit<MetricaDiaria, 'fecha'> = { kg_recibidos: 0, compras_usd: 0
 const semanaISO = (f: string) => { const d = new Date(f + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10) }
 const restarDias = (f: string, n: number) => { const d = new Date(f + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10) }
 
+type Rango = 'Todo' | '7 días' | '30 días' | '90 días' | 'Personalizado'
+const RANGOS: Rango[] = ['Todo', '7 días', '30 días', '90 días']
+
 export default function Tablero() {
+  // Por defecto se muestra TODO lo registrado (desde el primer movimiento); los atajos acotan.
+  const [rango, setRango] = useState<Rango>('Todo')
   const [desde, setDesde] = useState(diasAtras(30))
   const [hasta, setHasta] = useState(hoy())
+  const primera = useAsync<string | null>(tab.getPrimeraFecha, [], null)
+  useEffect(() => { if (rango === 'Todo' && primera.data) setDesde(primera.data < hoy() ? primera.data : hoy()) }, [primera.data, rango])
+  const elegirRango = (r: Rango) => {
+    setRango(r); setHasta(hoy())
+    if (r === 'Todo') setDesde(primera.data ?? diasAtras(365))
+    else if (r !== 'Personalizado') setDesde(diasAtras(Number.parseInt(r, 10)))
+  }
   const [producto, setProducto] = useState('')
   const kpi = useAsync<Kpis | null>(() => tab.getKpis(desde, hasta), [desde, hasta], null)
   const alertas = useAsync<Alerta[]>(tab.getAlertas, [], [])
@@ -61,8 +73,9 @@ export default function Tablero() {
 
   return (
     <PageTemplate titulo="Tablero" subtitulo="Qué hay, qué falta y qué revisar hoy." acciones={<>
-      <Field label="Desde" style={{ margin: 0 }}><Input tipo="date" value={desde} onChange={(e) => setDesde(e.target.value)} aria-label="Desde" /></Field>
-      <Field label="Hasta" style={{ margin: 0 }}><Input tipo="date" value={hasta} onChange={(e) => setHasta(e.target.value)} aria-label="Hasta" /></Field>
+      <Field label="Período" style={{ margin: 0 }}><Chips valor={rango} onChange={(v) => elegirRango(v as Rango)} items={RANGOS.map((r) => ({ valor: r }))} /></Field>
+      <Field label="Desde" style={{ margin: 0 }}><Input tipo="date" value={desde} onChange={(e) => { setRango('Personalizado'); setDesde(e.target.value) }} aria-label="Desde" /></Field>
+      <Field label="Hasta" style={{ margin: 0 }}><Input tipo="date" value={hasta} onChange={(e) => { setRango('Personalizado'); setHasta(e.target.value) }} aria-label="Hasta" /></Field>
       <Field label="Producto (costo y rendimiento)" style={{ margin: 0 }}>
         <Select value={producto} onChange={(e) => setProducto(e.target.value)} aria-label="Producto" opciones={productos.length ? productos.map((p) => ({ value: p.codigo, label: `${p.nombre} (${p.codigo})` })) : [{ value: '', label: 'Sin datos' }]} /></Field></>}>
       <Notice tipo="error">{kpi.error || alertas.error || stock.error || diario.error || compras.error || costoSem.error || rend.error}</Notice>

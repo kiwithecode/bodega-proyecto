@@ -70,6 +70,7 @@ src/pages/      una por ruta; componen organismos y llaman servicios
   Reglas: un solo eje Y por gráfica (nunca dos escalas), colores por serie en orden fijo `--serie-1` azul, `--serie-2` naranja (paleta validada CVD/contraste),
   leyenda solo con ≥ 2 series, tooltip con todas las series en ese X, botón "Tabla" en toda figura, barras nominales de un solo color, eje desde 0 salvo tendencias de precio (`eje="auto"`).
   Datos: vistas ya existentes (`v_metricas_diarias`, `v_precios_compra`, `v_costo_semanal`, `v_rendimiento_proveedor`); no se agregó SQL para el tablero.
+  El período por defecto es **Todo** (desde el primer movimiento, `getPrimeraFecha`) con atajos 7/30/90 días; tocar las fechas pasa a Personalizado.
 - Nombres en español, la misma voz que la interfaz (`guardarProceso`, `listLotesDisponibles`).
 - Para añadir pantalla: servicio → organismos que falten → página → una línea en `RUTAS` de `App.tsx`. El menú sale de ese array.
 - Nada de CSS global nuevo: solo `styles/tokens.css` y CSS Modules. Sin Tailwind.

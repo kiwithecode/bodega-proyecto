@@ -16,3 +16,5 @@ export const getCostoSemanal = (desdeSemana: string) =>
 /** Rendimiento acumulado por proveedor para un producto (procesos de un solo lote). */
 export const getRendimientoProducto = (productoCodigo: string) =>
   supabase.from('v_rendimiento_proveedor').select('*').eq('producto_codigo', productoCodigo).order('rendimiento_pct', { ascending: false }).then((r) => ok<RendimientoProveedor[]>(r))
+/** Fecha del primer movimiento (recepción o proceso), para que el tablero arranque mostrando todo. */
+export const getPrimeraFecha = () => supabase.from('v_metricas_diarias').select('fecha').order('fecha').limit(1).then((r) => ok<{ fecha: string }[]>(r)).then((d) => d?.[0]?.fecha ?? null)
