@@ -4,20 +4,21 @@ import { Tabs } from '../components/molecules'
 import { DataTable, Grid, Panel, ProductoForm, ProveedorForm } from '../components/organisms'
 import { PageTemplate } from '../components/templates'
 import { useAsync } from '../hooks/useAsync'
-import type { Especie, Obrero, Producto, Proveedor } from '../lib/types'
+import type { Especie, Obrero, Parametro, Producto, Proveedor } from '../lib/types'
 import * as cat from '../services/catalogos'
 
 const ROL = { principal: 'Producto', subproducto: 'Subproducto', merma: 'Merma', devolucion: 'Devolución' }
-type Tab = 'productos' | 'proveedores' | 'obreros'
+type Tab = 'productos' | 'proveedores' | 'obreros' | 'parametros'
 
 export default function Catalogos() {
   const [tab, setTab] = useState<Tab>('productos')
   return (
     <PageTemplate titulo="Catálogos" subtitulo="Productos, proveedores y obreros. Al agregar, el sistema avisa si ya existe algo parecido y propone el código.">
-      <Tabs<Tab> activo={tab} onChange={setTab} items={[{ id: 'productos', label: 'Productos' }, { id: 'proveedores', label: 'Proveedores' }, { id: 'obreros', label: 'Obreros' }]} />
+      <Tabs<Tab> activo={tab} onChange={setTab} items={[{ id: 'productos', label: 'Productos' }, { id: 'proveedores', label: 'Proveedores' }, { id: 'obreros', label: 'Obreros' }, { id: 'parametros', label: 'Parámetros' }]} />
       {tab === 'productos' && <Productos />}
       {tab === 'proveedores' && <Proveedores />}
       {tab === 'obreros' && <Obreros />}
+      {tab === 'parametros' && <Parametros />}
     </PageTemplate>
   )
 }
@@ -109,5 +110,32 @@ function Obreros() {
         </Panel>
       </Grid>
     </>
+  )
+}
+
+const NOMBRE_PARAM: Record<string, string> = {
+  compras_max_semana_kg: 'Compras máximas por producto a la semana (kg)', stock_max_kg: 'Stock máximo por producto en bodega (kg)',
+  dias_max_camara_mp: 'Días máximos en cámara: materia prima', dias_max_camara_proc: 'Días máximos en cámara: procesado',
+  merma_max_pct: 'Merma no registrada que alerta (%)', precio_desvio_pct: 'Desvío de precio de compra que alerta (%)',
+  dias_consumo_promedio: 'Días para calcular consumo y cobertura', horas_proceso_abierto: 'Horas que un proceso puede quedar sin cerrar',
+}
+/** Umbrales de las alertas del Tablero. Se guardan al salir del campo. */
+function Parametros() {
+  const lista = useAsync<Parametro[]>(cat.listParametros, [], [])
+  const [msg, setMsg] = useState<{ t: 'ok' | 'error'; m: string } | null>(null)
+  const guardar = (p: Parametro, v: string) => {
+    const n = Number(v); if (v === '' || isNaN(n) || n < 0 || n === Number(p.valor)) return
+    Promise.resolve(cat.guardarParametro(p.clave, n)).then(() => { setMsg({ t: 'ok', m: `Guardado: ${NOMBRE_PARAM[p.clave] ?? p.clave} = ${n}. Las alertas se recalculan al abrir el Tablero.` }); void lista.recargar() }).catch((e: Error) => setMsg({ t: 'error', m: e.message }))
+  }
+  return (
+    <Panel titulo="Parámetros de alertas">
+      <Notice tipo="error">{lista.error}</Notice>
+      {msg && <Notice tipo={msg.t}>{msg.m}</Notice>}
+      <DataTable<Parametro> filas={lista.data} filaKey={(p) => p.clave} columnas={[
+        { key: 'nombre', titulo: 'Qué controla', render: (p) => <>{NOMBRE_PARAM[p.clave] ?? p.clave}<Ayuda>{p.descripcion}</Ayuda></> },
+        { key: 'valor', titulo: 'Valor', n: true, ancho: 140, render: (p) => <Input tipo="number" chico step="any" min="0" defaultValue={p.valor} aria-label={NOMBRE_PARAM[p.clave] ?? p.clave} onBlur={(e) => guardar(p, e.target.value)} /> },
+      ]} />
+      <Ayuda style={{ marginTop: 8 }}>El stock máximo general aplica a los productos que no tienen su propio "Ideal kg" en Stock → Por producto; si lo tienen, manda el ideal.</Ayuda>
+    </Panel>
   )
 }

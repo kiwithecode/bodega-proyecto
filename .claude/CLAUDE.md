@@ -22,8 +22,9 @@ Regla: cada archivo es idempotente por sí mismo, pero **no se re-ejecuta un arc
 | `05_auditoria_logs.sql` | `auditoria` (trigger genérico), `logs_app` + `fn_log`, `v_auditoria`, `v_logs_resumen`. |
 | `06_tests_pgtap.sql` | 29 pruebas del motor; se revierte solo. |
 | `07_correcciones.sql` | `fn_editar_lote` (cambia fecha → rearma código), `fn_quitar_jaba` (una fila de `recepcion_detalle`; borra el lote si era la última) y `fn_anular_lote` (borra jabas, recepción vacía y lote). Requerido por Stock y Lotes. |
-| `07_tests_correcciones_pgtap.sql` | 54 pruebas de correcciones, sobrante, pedidos, destinos y obreros; se revierte solo. |
+| `07_tests_correcciones_pgtap.sql` | 57 pruebas de correcciones, sobrante, pedidos, destinos, obreros y alarmas de volumen; se revierte solo. |
 | `08_proceso_obrero.sql` | `procesos.obrero` (texto libre, quién procesó), `v_trazabilidad.obrero`, `fn_obreros()` para autocompletar. |
+| `17_alertas_volumen.sql` | `parametros.compras_max_semana_kg` y `stock_max_kg` (1000); alertas `COMPRAS ALTAS` (nivel 2, semana en curso) y `STOCK ALTO` (nivel 3); semáforo `ALTO` usa `coalesce(kg_ideal, stock_max_kg)`. Definiciones vigentes de `v_stock_semaforo` y `v_alertas`. |
 | `16_destinos_moler_cortar.sql` | `destino` admite `moler` y `cortar`; `fn_sufijo_destino` (-MOLER / -CORTAR / -CLIENTE); `fn_procesar` vigente. |
 | `15_obreros.sql` | Tabla `obreros` (nombre único por `lower(trim)`), `procesos.obrero_id` + trigger que copia el nombre a `procesos.obrero`; migra los nombres libres; `fn_rendimiento_obrero(desde,hasta)`; borra `fn_obreros()`. |
 | `14_horas_proceso.sql` | `procesos.hora_inicio/hora_fin` (time, opcionales) y en `v_trazabilidad`. Duración con `duracion()` de `format.ts` (si fin < inicio, pasó la medianoche). |
@@ -49,7 +50,7 @@ Regla: cada archivo es idempotente por sí mismo, pero **no se re-ejecuta un arc
 - **Costo**: neto = Σ(kg consumidos × costo_kg de entrada) − Σ(subproductos × precio_credito); costo/kg principal = neto ÷ Σ kg principales.
   Lotes hijos que se fusionan (misma clave) → promedio ponderado. Editar precio de compra **recalcula en cascada** todos los descendientes.
 - Venas/sangre/desperdicio **no son stock** ni disparan alertas de lote viejo.
-- **Semáforo de stock** (`v_stock_semaforo`, por producto sumando todos sus lotes): `SIN STOCK` rojo · `BAJO` ámbar (< mínimo o < 2 días de consumo) · `ALTO` azul (> ideal) · `OK` verde.
+- **Semáforo de stock** (`v_stock_semaforo`, por producto sumando todos sus lotes): `SIN STOCK` rojo · `BAJO` ámbar (< mínimo o < 2 días de consumo) · `ALTO` azul (> ideal, o > `parametros.stock_max_kg` si no tiene ideal) · `OK` verde.
   Mínimo e ideal viven en `stock_minimos` (ambos opcionales) y se editan en Stock → Por producto vía `guardarNiveles`. El tono lo da `tonoSemaforo`; el medidor de la fila llena hasta el ideal.
 - Kilos que no cuadran quedan en `procesos.kg_merma_no_reg` y disparan alerta si superan `parametros.merma_max_pct`.
   Si las salidas pesan MÁS que la entrada (error humano de pesaje), `kg_merma_no_reg` queda negativo (= sobrante): el frontend pide marcar
@@ -102,7 +103,7 @@ No hay Postgres local ni Docker en la máquina de Kevin: las pruebas pgTAP se co
 - Sin macros Excel, sin backend propio, sin Tailwind, TypeScript estricto.
 - La llave del frontend es la `anon`/`publishable`; **nunca** `service_role` en el cliente.
 - RLS: un solo rol (`authenticated`) con acceso total; `auditoria` y `logs_app` solo lectura desde la app.
-- Alertas se calculan al abrir la pantalla (vista), no se guardan. Notificaciones push/WhatsApp quedan para más adelante.
+- Alertas se calculan al abrir la pantalla (vista), no se guardan. Sus umbrales viven en `parametros` y se editan en Catálogos → Parámetros (sin UI para crear claves nuevas: eso va por SQL). Notificaciones push/WhatsApp quedan para más adelante.
 - Los servicios devuelven `PromiseLike` (builder de Supabase): para `.catch` en páginas, envolver con `Promise.resolve(...)`.
 - **Nunca `Math.max(...arr)` / spread sobre arreglos de datos**: usar `maximo`/`minimo` de `lib/series.ts`. Una fecha con año mal digitado (0226) generó una serie de 650 000 días y "Maximum call stack size exceeded" en el Tablero (08/09/2026). `diasEntre` está topado a `MAX_DIAS_SERIE`; las fechas de formularios se validan con `fechaValida`.
 

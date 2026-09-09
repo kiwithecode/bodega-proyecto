@@ -81,7 +81,7 @@ export default function Stock() {
         </Panel>
       )}
       <Ayuda style={{ marginTop: 10 }}>
-        Cada fila suma todos los lotes del producto, sin importar el proveedor. Mínimo e ideal son opcionales: bajo el mínimo el producto se marca BAJO y el tablero avisa; por encima del ideal se marca ALTO. La cobertura usa el consumo real de los últimos 30 días.
+        Cada fila suma todos los lotes del producto, sin importar el proveedor. Mínimo e ideal son opcionales: bajo el mínimo el producto se marca BAJO y el tablero avisa; por encima del ideal (o del máximo general en Catálogos → Parámetros) se marca ALTO y el tablero avisa. La cobertura usa el consumo real de los últimos 30 días.
         {' '}Para corregir un error de digitación, abre el lote desde <b>Por lote</b> (o con <b>Ver lotes</b> en un producto): ahí se cambia fecha, kilos y precio, o se anula la recepción.
       </Ayuda>
     </PageTemplate>

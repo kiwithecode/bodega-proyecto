@@ -1,5 +1,5 @@
 import { supabase, ok } from '../lib/supabase'
-import type { CodigoSugerido, Especie, Obrero, Producto, Proveedor, Rol, Similar, TipoProceso } from '../lib/types'
+import type { CodigoSugerido, Especie, Obrero, Parametro, Producto, Proveedor, Rol, Similar, TipoProceso } from '../lib/types'
 
 export const listEspecies = () => supabase.from('especies').select('*').order('id').then((r) => ok<Especie[]>(r))
 export const listTiposProceso = () => supabase.from('tipos_proceso').select('*').order('id').then((r) => ok<TipoProceso[]>(r))
@@ -37,3 +37,7 @@ export const listObreros = ({ soloActivos = true } = {}) => {
 export const crearObrero = (nombre: string) => supabase.from('obreros').insert({ nombre: nombre.trim() }).select().single().then((r) => ok<Obrero>(r))
 export const actualizarObrero = (id: number, cambios: Partial<Pick<Obrero, 'nombre' | 'activo' | 'notas'>>) =>
   supabase.from('obreros').update({ ...cambios, ...(cambios.nombre != null ? { nombre: cambios.nombre.trim() } : {}) }).eq('id', id).then(ok)
+
+/** Parámetros de alertas y cobertura (tabla parametros; los lee fn_param en la base). */
+export const listParametros = () => supabase.from('parametros').select('*').order('clave').then((r) => ok<Parametro[]>(r))
+export const guardarParametro = (clave: string, valor: number) => supabase.from('parametros').update({ valor }).eq('clave', clave).then(ok)

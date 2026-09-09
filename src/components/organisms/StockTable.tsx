@@ -59,7 +59,7 @@ export function StockTable({ filas, onNivel, onVerLotes, compacta, maxAltura }: 
 export function LeyendaSemaforo() {
   const items: { s: Semaforo; texto: string }[] = [
     { s: 'SIN STOCK', texto: 'Sin stock' }, { s: 'BAJO', texto: 'Bajo: menos del mínimo o de 2 días de consumo' },
-    { s: 'OK', texto: 'Normal' }, { s: 'ALTO', texto: 'Alto: por encima del ideal' },
+    { s: 'OK', texto: 'Normal' }, { s: 'ALTO', texto: 'Alto: por encima del ideal (o del máximo general de Parámetros)' },
   ]
   const color: Record<Semaforo, string> = { 'SIN STOCK': 'var(--rojo)', BAJO: 'var(--ambar)', OK: 'var(--verde)', ALTO: 'var(--azul)' }
   return <div className={s.leyenda}>{items.map((i) => <span key={i.s}><i style={{ background: color[i.s] }} />{i.texto}</span>)}</div>

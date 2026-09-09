@@ -1,12 +1,12 @@
 -- =============================================================================
 --  07 · PRUEBAS de fn_editar_lote, fn_quitar_jaba, fn_anular_lote (07) y sobrante (10) (pgTAP)
---  Requiere 01–05 y 07–16. Todo dentro de una transacción que se
+--  Requiere 01–05 y 07–17. Todo dentro de una transacción que se
 --  revierte al final: NO deja datos. Cualquier línea "not ok" es una falla.
 -- =============================================================================
 create extension if not exists pgtap;
 
 begin;
-select plan(54);
+select plan(57);
 create temp table _res (linea text);   -- guarda cada resultado para listar los fallos al final
 
 -- Si estas fallan, falta cargar (o volver a cargar) 07_correcciones.sql: todo lo demás va a fallar también.
@@ -170,6 +170,15 @@ select fn_procesar('f1111111-1111-1111-1111-111111111111');
 insert into _res select is((select rendimiento_pct from fn_rendimiento_obrero('2026-05-27','2026-05-27') where obrero = 'Test Obrero Renombrado'), 80.0, 'rendimiento del obrero = principal / entrada');
 insert into _res select is((select horas from fn_rendimiento_obrero('2026-05-27','2026-05-27') where obrero = 'Test Obrero Renombrado'), 2.00, 'horas trabajadas = fin − inicio');
 insert into _res select is((select kg_por_hora from fn_rendimiento_obrero('2026-05-27','2026-05-27') where obrero = 'Test Obrero Renombrado'), 10.0, 'kg por hora');
+
+-- -----------------------------------------------------------------------------
+-- 7. Alarmas de volumen (17): compras de la semana y stock alto
+-- -----------------------------------------------------------------------------
+insert into recepciones (id, fecha, proveedor_id) values ('a7777777-7777-7777-7777-777777777777', current_date, _pr(16));
+insert into recepcion_detalle (recepcion_id, producto_id, kg_real, precio_kg) values ('a7777777-7777-7777-7777-777777777777', _p('DR'), 1100, 13.0);
+insert into _res select is((select count(*) from v_alertas where tipo = 'COMPRAS ALTAS' and referencia = 'DR'), 1::bigint, 'más de 1000 kg comprados en la semana → COMPRAS ALTAS');
+insert into _res select is((select semaforo from v_stock_semaforo where codigo = 'DR'), 'ALTO', 'más de 1000 kg en bodega sin ideal propio → semáforo ALTO');
+insert into _res select is((select count(*) from v_alertas where tipo = 'STOCK ALTO' and referencia = 'DR'), 1::bigint, '→ y alerta STOCK ALTO');
 
 -- Resumen + detalle de las que fallaron (el SQL Editor solo muestra el último resultado).
 select * from finish()

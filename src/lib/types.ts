@@ -54,6 +54,7 @@ export interface StockSemaforo {
   ultimo_ingreso: string | null; costo_kg_prom: number | null; valor_stock: number; kg_minimo: number | null
   kg_ideal: number | null; kg_por_dia: number | null; dias_cobertura: number | null; semaforo: Semaforo
 }
+export interface Parametro { clave: string; valor: number; descripcion: string | null }
 export interface Alerta { nivel: 1 | 2 | 3 | 4; tipo: string; referencia: string | null; mensaje: string; lote_id: string | null; proceso_id: string | null; producto_id: number | null }
 export interface Kpis {
   kg_recibidos: number; compras_usd: number; recepciones: number; proveedores_distintos: number
